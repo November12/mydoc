@@ -1,0 +1,42 @@
+官网: http://www.cloudera.com/
+
+1. CDH
+  见图CDH.png
+  四层结构，从下至上依次是:
+  第一层: 数据源
+    sqoop, flume, NFS ..
+  第二层: 存储层
+    HDFS(filesystem)、HBase(Online NoSQL)
+  第三层: 资源管理
+    YARN、Mesos
+  第四层: 应用层
+    批处理: MapReduce、Hive、Pig
+    流处理: Spark
+    Web Hive: impala
+    搜索: solr
+    机器学习: Spark、MapReduce、Mahout
+    
+2. Cloudera Manager
+  1.管理(Manage)
+    简单部署、集中配置、集中数据管理、数据流管理
+  2.监控(Monitor)
+    热点图、预警、报警
+  3.诊断(Diagnose)
+    操作日志、查看(搜索)日志、仪表盘、审计跟踪、统计报表
+  4.集成(Integrate)
+    通过API、SNMP、SMTP，可以整合到现有的监控体系当中
+    
+3. Cloudera Navigator(Data Manager)
+  数据审计、权限控制
+  数据的发现和挖掘
+  血缘分析
+  生存期管理
+
+
+  
+5. Cloudera hue
+  可以在hue编写mr，查看修改hdfs的文件，管理hive的元数据，运行Sqoop，编写Oozie工作流等大量工作
+
+
+
+

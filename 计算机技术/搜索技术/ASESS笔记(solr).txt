@@ -1,0 +1,490 @@
+第一章 Quick Starting Solr
+  问题:
+    1. Solr 和 Lucene 到底是什么
+    2. Solr 和 传统关系型数据库有什么不同
+    3. 如何获取并安装Solr
+    4. 如果运行Solr并导入数据
+    5. Solr 的管理页面和配置文件是怎么样的
+    
+  1. 介绍Lucene
+    什么是Lucene: Lucene is an open source, high-performance text search engine library.
+          是通过API来操控Lucene的。(Lucene相关细节可参考Lucene in Action)
+    
+    Lucene中用到的词汇:
+      Document        文档, 索引和搜索的基本单位
+      Field           域, 可以被索引也可以不被索引
+      Term            项
+      Analysis        将Doc变成Term的过程
+      QueryParser     将查询表达式变成Query Object的过程
+      IndexSearcher   所有的搜索都是通过IndexSearcher重载的search方法实现的
+    
+  2. 介绍Solr
+    什么是Solr: Apache Solr is an enterprise search server based on Lucene.
+  
+    Solr是Java编写的, 但操作Solr并不需要精通Java
+    Solr的通讯相当的标准，
+    
+    作为Server要考虑的问题:
+      通讯协议: 采用标准的HTTP, XML, JSON
+      配置文件: schema.xml
+      Caches机制: 加速访问效率
+      基于Web的管理接口:
+        运行时的查询和缓存的性能统计
+        表结构信息
+        debug工具
+      Faceting组件
+      额外的query parser: dismax
+      分布式部署
+      DIH: 从数据库和结构化文档中导入数据
+      Solr Cell: 对富文本的解析
+
+  3. 与数据库技术对比
+    data model:
+      RDBMS： table, 栅格化
+      MongoDB: 基于文档，可嵌套
+      Lucene: 基于文档, 不可嵌套，扁平式
+    
+    index:
+      RDBMS：B树
+      Lucene: 倒排索引
+      
+    transactions:
+      RDBMS：ACID
+      Lucene: commit(No updates, Slow commits)
+      
+  4. 安装Solr
+    详见"solr安装"文档
+    jdk + tomcat + solr + zookeeper
+    
+  5. 配置文件
+    见第二章
+
+    
+    
+    
+    
+
+第二章 Schema.xml
+  问题:
+    Schema.xml有哪些内容
+    Text analysis如何将text处理成index
+    
+  1. Solr Cores
+    可以看做database, 有自己单独的存储文件和Schema.xml
+    
+  2. Schema.xml
+    2.1 uniqueKey
+      solr添加、删除都需要依靠主键，但只支持字符串格式的主键，且不能是联合主键
+      <uniqueKey>id</uniqueKey>
+    
+    2.2 fieldType
+      数据类型信息, 也可以自定义类型
+      <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+    
+    2.3 field
+      定义列: <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+      动态列: <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>  
+      拷贝列: 1. 对同一个列做不同的索引; 2. 对多个列做相同的索引(简单，抽象，高效)
+              <copyField source="cat" dest="text"/>
+              <copyField source="manu" dest="text"/>
+
+    2.4 Text analysis
+      analyzer会用在两个地方，index和query，可以分别设置
+      analyzer有一个tokenizer和多个filter
+    
+       <fieldType name="text_en" class="solr.TextField" positionIncrementGap="100">
+         <analyzer type="index">
+           <tokenizer class="solr.StandardTokenizerFactory"/>
+           <filter class="solr.StopFilterFactory"
+                   ignoreCase="true"
+                   words="lang/stopwords_en.txt"
+                   enablePositionIncrements="true"
+                   />
+           <filter class="solr.LowerCaseFilterFactory"/>
+           <filter class="solr.EnglishPossessiveFilterFactory"/>
+           <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+           <filter class="solr.PorterStemFilterFactory"/>
+         </analyzer>
+         <analyzer type="query">
+          ...
+         </analyzer>
+       </fieldType>
+  
+    
+
+    
+第三章 Indexing Data
+  问题: 
+    1. 要import数据，如何和Solr通讯
+    2. 发送数据的格式有哪些
+    3. 了解Commit, optimize, rollback, and deleting
+    4. 什么是DIH，可以干些什么
+    5. 什么是Solr Cell
+    6. Document post-processing with UpdateRequestProcessors
+    
+  1. Solr通讯方式
+    1.1 HTTP：
+      可以使用任意的HTTP客户端API(需要对solr交互协议有所了解) curl </commit>
+      Solr也整合了HTTP协议的API, 如SolrJ(java)、Sunspot(ruby)  send.commit
+      
+      通过HTTP发送命令，和发送数据，是两个channel.
+      可以放在一起，也可以分开。
+      但不管哪种方式，都属于推式导入。
+      
+      curl --databinary @file       将file附带到HTTP报文中发送
+      curl -F stream.body=@file     同--databinary
+      curl -F stream.file=@file     HTTP报文只发送update命令，Solr会去导入file内容(显然，file必须solr能访问到)
+      curl -F stream.url=@url       HTTP报文只发送update命令，Solr会去指定url导入内容
+      
+      数据的文档格式:
+        XML:
+        JSON:
+        Java-Bin:
+        CSV:
+        Rich documents: 如PDF, XLS, DOC, PPT;
+        
+  2. Commit, optimize, and rollback
+    2.1 Commit
+      数据的更新操作(insert,delete)，不是立刻就能反应到查询上的。
+      只有执行了commit之后才行。
+      
+      Commit很慢, 有很大的开销
+      Solr没有事务的概念，Commit会相互影响，导致无法Rollback。可能的话，所有的更新操作，由一个源来执行。
+      
+      autoCommit: 多少条更新，或多长时间后自动commit, 写在solrconfig.xml
+      commitWithin: 指定多长时间以后自动更新，随命令一起发送
+      显然，autoCommit更具有原则性，commitWithin更有灵活性
+      
+    2.2 optimize
+      可以看做是多个文件的合并整理
+      显然，optimize会锁住文件，并占用cpu和io，建议在空闲时间处理
+      <optimize waitFlush="true" waitSearcher="true"/>
+      
+    2.3 rollback
+      没有什么参数和特征
+      rollback之后，所有未commit的数据都被清除
+      
+  3. Data Import Handler(DIH)
+    拉式的数据导入
+    可以方便的将其他数据源的数据导入Solr
+    其他数据源可以是:
+      JDBC: 支持增量导入
+      HTTP GET: 
+      IMAP: 导入邮件
+      ...
+      
+  4. Solr Cell
+    对富文本的导入
+    ...
+    
+  5. Update request processors
+    进行文档后处理, 第9章会具体介绍
+    
+ 
+ 
+ 
+ 
+第四章 Searching
+  问题:
+    什么是Request handlers
+    了解Query parameters有哪些
+    query parser - lucene(default)
+    query parser - dismax
+    Filtering
+    Sorting
+
+    1. Request handlers
+      defaults:   默认参数，如果url带有参数，默认参数会被覆盖
+      appends:    设置额外的参数，将会和url带有的参数合并
+      invariants: 设置默认参数，此参数url不可更改
+      
+    2. Query parameters
+      q(query):     语法由defType决定， 类似where
+      defType:      query parser的类型，默认是lucene， 可选dismax, edismax
+      fq:           filter query, 和q有些相像，但是不影响score
+      qt:           query type, 指定Request handlers
+      start:        第几条开始
+      rows:         共显示几条
+      fl:           field list, 类似 select, *代表所有的列，score代表分数
+      sort:         排序, r_name asc, score desc
+      wt:           writer type, xml, json, csv ...
+      version:      solr版本，防止版本不一致造成的兼容性问题
+      indent:       为了显示好看一点，不给人看时无需加上
+      debugQuery:   debug信息
+      echoHandler:  输出与solr request handler匹配的java 类名
+      echoParams:
+      
+    ... 
+    http://beijingit.blog.163.com/blog/static/29639092201212145312231/
+    
+    
+    4. Dismax（part1)
+      
+    
+    5. Filtering
+      不影响score
+      
+    
+    6. Sorting
+      默认是score desc
+      进行排序字段的数值类型必须是single valued,indexed,并且是not-tokenized。
+      一旦进行了排序，score的意义就不大了
+      
+      
+
+      
+    
+  
+第五章 Search Relevancy
+  问题:
+    1. 影响打分的因素有哪些
+    2. 查询时，如何调整打分
+    3. Dismax相关度方面的参数有哪些
+    4. Function queries
+    
+  1. Scoring
+    5.1.1 影响打分的因素
+      tf:           Term frequency, 在field中出现的次数
+      idf:          在索引中出现的总次数，越小表明term越珍贵
+      coord:        Co-ordination factor，越协调分数越高
+      fieldNorm:    field中的term越少，分数越高(可以通过设置omitNorms禁掉)
+    
+    5.1.2 给打分加权(boosting):
+      查询时期(Query-time)或创建索引(index-time)时都可以选择文档(doc)或字段(field)级别的boosting
+      尽量不要在创建索引时执行boosting，因为它不像查询那样灵活，也就是说需要更多的可预测性和可操作性。
+    
+    5.1.3 debugQuery:
+      排序是个非常细腻的工作，通常需要debug来确认打分和想法是否一致
+      还有很多开发经验可以去试验例如：sweetspotsimilarity
+    
+  2. Dismax query parser(part 2)
+    这里提到的所有应用于dismax的也都适用于edismax，除非明确说明不适用。其实edismax就是打算在未来的发布版本中替代dismax的。
+    
+    5.2.1 tie
+      用户查询: albino elephant
+      文档A: albino在标题，elephant在正文
+      文档B: albino在标题，无elephant
+      
+      是希望A排在前面吗，可以通过调整tie值达到目的。
+      tie = 0, 取各field中，最高的得分, 不累加
+      tie = 1, 取各field得分之和
+      tie 0 ~ 1, 加权处理, 经验值是(0.1)
+      
+    5.2.2 phrase boosting
+      在dismax里，引号引起来的内容算做短语(phrase), 短语的得分会更高。
+      对短语的一些设置:
+        间隔: term之间可以间隔多少个单词，如 "billy joel"~2   
+        连续: 对连续的几个词，大幅增强其权重。如how now brown cow, 比now brown cow可能高很多，
+        
+    5.2.3 Boost queries
+      设置bq参数，对符合条件的doc进行boost
+      
+    5.2.4 
+      设置bf参数，通过用户设置的公式来对文档的score进行计算。可以使用bf多次。
+      ....
+      
+      
+        
+        
+第六章 Faceting
+  习惯将Facet翻译成分组，类似order by，但结果只能是count
+
+  1. 可以设置的参数
+    facet.field:    要统计哪些列(必填)
+    facet.sort:     排列顺序, 可以设置count desc 或者 index。如果设置了facet.limit, 默认是count, 反之，默认是index
+    facet.limit:    默认100条
+    facet.offset：  和limit一起来实现分页
+    facet.mincount: 默认是0。至少要有mincount条，才显示
+    facet.missing： 某些值，可能不是我们预期的任何一类，比如内容是空格。将这样的类筛选掉。
+    facet.prefix：  统计前缀是xxx的count
+    facet.method:   
+    Facet query:    格外提供针对query的统计，在<facet_queries>里
+  
+  2. 还可以对区间进行统计:
+    按字母顺序统计，如:
+      <int name="A-C">99005</int>
+      <int name="D-F">68376</int>
+      <int name="G-I">60569</int>
+      
+    时间区间:  区间开始(5年前), 结束(今年), 粒度(+1年)
+      <lst name="facet_ranges">
+        <lst name="r_event_date_earliest">
+        <lst name="counts">
+        <int name="2006-01-01T00:00:00Z">3</int>
+        <int name="2007-01-01T00:00:00Z">11</int>
+        <int name="2008-01-01T00:00:00Z">0</int>
+        <int name="2009-01-01T00:00:00Z">0</int>
+        <int name="2010-01-01T00:00:00Z">0</int>
+      </lst>
+      <str name="gap">+1YEAR</str>
+      <date name="start">2006-01-01T00:00:00Z</date>
+      <date name="end">2011-01-01T00:00:00Z</date>
+      <int name="before">97</int>
+      <int name="after">0</int>
+      <int name="between">14</int>
+
+    数字区间:  区间开始(0), 结束(240), 粒度(60)
+    <lst name="t_duration">
+      <lst name="counts">
+      <int name="0">128</int>
+      <int name="60">64</int>
+      <int name="120">111</int>
+      <int name="180">132</int>
+    </lst>
+    <int name="gap">60</int>
+    <int name="start">0</int>
+    <int name="end">240</int>
+    <int name="after">117</int>
+  
+  3. filter query
+    对分类的查询，可以将分类条件加在fq字段里面
+  
+  4. Excluding filters
+    加上filter query之后，比如fq="C2: 1", 结果除了C2=1, 其它的统计获取不到了
+      <lst name="C2">
+        <int name="1">1827966</int>
+        <int name="2">0</int>
+        <int name="3">0</int>
+        ...
+      </lst>
+
+    改为fq={!tag=foo}C2:1, facet.field={!ex=foo}C2之后
+      <lst name="C2">
+        <int name="1">1827966</int>
+        <int name="11">1594372</int>
+        <int name="12">76927</int>
+        ...
+      </lst>
+    filter query没有影响到facet
+
+    
+  5. Hierarchical faceting
+    按级数显示count, 需要多个field, field之间只存在逻辑意义
+    
+    
+    
+第七章 Search Components
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+第8章 Deployment
+  测试环境 -> 部署环境注意的问题
+    负载:
+      生产环境的负载可能大得多
+    solr架构:
+      Replication 还是 Distributed Search
+    集成开发环境(开发模式):
+      Ant/MSBuild/Capistrano?
+    如何初始化solr的数据:
+      通过部署脚本?
+    维护已用性:
+      文档?脚本?
+    监控:
+    
+    灾备(数据备份):
+    
+solr:
+  http://wiki.apache.org/solr/Solrj
+  SolrJ覆盖了solr的全部功能, 
+  体系
+  提供adding, deleting and updating documents with Solr.
+  内嵌solr, 无需访问http server
+  
+  HttpSolrServer:
+  
+  
+SolrServer server = new HttpSolrServer( url );
+Changing other Connection Settings
+HttpSolrServer allows setting connection properties. 
+
+
+  String url = "http://localhost:8983/solr"
+  HttpSolrServer server = new HttpSolrServer( url );
+  server.setMaxRetries(1); // defaults to 0.  > 1 not recommended.
+  server.setConnectionTimeout(5000); // 5 seconds to establish TCP
+  // Setting the XML response parser is only required for cross
+  // version compatibility and only when one side is 1.4.1 or
+  // earlier and the other side is 3.1 or later.
+  server.setParser(new XMLResponseParser()); // binary parser is used by default
+  // The following settings are provided here for completeness.
+  // They will not normally be required, and should only be used 
+  // after consulting javadocs to know whether they are truly required.
+  server.setSoTimeout(1000);  // socket read timeout
+  server.setDefaultMaxConnectionsPerHost(100);
+  server.setMaxTotalConnections(100);
+  server.setFollowRedirects(false);  // defaults to false
+  // allowCompression defaults to false.
+  // Server side must support gzip or deflate for this to have any effect.
+  server.setAllowCompression(true);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+    
+数据更新:
+  1. 历史数据更新
+    通过程序去导
+  2. 实时数据更新
+    通过统一查询接口去导
+    
+Create Table??
+  
+
+    
+    

@@ -1,0 +1,477 @@
+1. tcpdump
+
+  监听网络上的数据包，需要root权限。
+  
+  常用参数:
+    -i eth1                       # 监视指定网络接口的数据包(默认tcpdump只会监视第一个网络接口，一般是eth0)
+    -n                            # 显示ip，而不是主机名
+    -c10                          # 指定抓10个包后退出
+    -A                            # 以ASCII方式显示包内容，这个选项对文本格式的协议包非常有用
+    -x                            # 以十六进制的方式显示包的内容
+    -s                            # 指定抓包显示一行的宽度，-s0表示显示完整的包，经常和-A一起用
+    
+
+  常用表达式:
+    host|net|port                 # 监听主机|网络|端口
+    src|dst                       # 确定传输方向, 缺省是dst or src
+    tcp|udp|arp                   # 协议
+    not|and|or                    # 三种逻辑运算符，可以构成强大的组合条件，也可用 !, &&, ||表示
+    
+  示例:
+    #tcpdump host 210.27.48.1 and \(210.27.48.2 or 210.27.48.3 \) 
+    #tcpdump tcp port 23 host 210.27.48.1 
+
+  输出结果:  
+    每行的内容非常清晰，无需特别说明。
+    下面介绍几种典型的输出类型:
+      1. 数据链路层头信息
+        tcpdump -e host 10.15.62.156
+      2. ARP包
+        #tcpdump arp 
+      3. TCP包
+      4. UDP包
+
+    
+    
+
+
+2. vmstat
+
+  vmstat是一个很全面的性能分析工具，可以观察到系统的进程状态、内存使用、虚拟内存使用、磁盘IO、中断、上下问切换、CPU使用等。
+  系统性能分析工具中，使用最多的是就是这个。而且无需root权限。
+  
+  常用参数:
+    -f          从开机到现在，被fork(vfork)的次数, 相当于执行的总任务数
+    -m          显示 /proc/slabinfo 内容
+    -s          如果结果只显示一次，用这种显示方法看起来更舒服(也包含内存的active，inactive信息)
+    -d          磁盘的读写情况
+    -S M        显示单位Mb, 默认是Kb, 通常要加上去
+    1           每秒更新一次
+    
+  常用命令:
+    vmstat -S M 1
+ 
+  输出格式:
+    procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu------
+     r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+     0  0 15285660 2791160 251148 16471476    0    1    14    32    0    1  3  3 94  0  0
+
+    Procs:
+      r: 运行的和等待(CPU时间片)运行的进程数，这个值也可以判断是否需要增加CPU(长期大于1)
+      b: 处于不可中断状态的进程数，常见的情况是由IO引起的
+    Memory:
+      swpd: 切换到交换内存上的内存(默认以KB为单位), 如果 swpd 的值不为0，或者还比较大，比如超过100M了，但是 si, so 的值长期为 0，这种情况我们可以不用担心，不会影响系统性能。
+      free: 空闲的物理内存
+      buff: 对块设备的读写进行缓冲
+      cache: 对块设备的读写进行缓存
+        '缓存'是把可能用到的数据保存起来，讲的是命中率。 '缓冲'是把需要处理的数据放在一个临时区，是为了解决速度不匹配的问题。
+    Swap:
+      si: 由磁盘调入内存
+      so: 由内存调入磁盘, 内存够用的时候，这2个值都是0，如果这2个值长期大于0时，系统性能会受到影响。
+    Io:
+      bi: 从块设备读入的数据总量(读磁盘) (KB/s)
+      bo: 写入到块设备的数据总量(写磁盘) (KB/s), 随机磁盘读写的时候，这2个值越大(如超出1M)，能看到CPU在IO等待的值也会越大
+    System:
+      in: 每秒产生的中断次数
+      cs: 每秒产生的上下文切换次数 上面这2个值越大，会看到由内核消耗的CPU时间会越多
+    Cpu:
+      us: 用户进程消耗的CPU时间百分比, us的值比较高时，说明用户进程消耗的CPU时间多，但是如果长期超过50%的使用，那么我们就该考虑优化程序算法或者进行加速了
+      sy: 内核进程消耗的CPU时间百分比, sy的值高时，说明系统内核消耗的CPU资源多，这并不是良性的表现，我们应该检查原因。
+      wa: IO等待消耗的CPU时间百分比, wa的值高时，说明IO等待比较严重，这可能是由于磁盘大量作随机访问造成，也有可能是磁盘的带宽出现瓶颈(块操作)。
+      id: CPU处在空闲状态时间百分比
+      
+    情景分析 这个vmstat的输出那些信息值得关注？
+      Procs r: 运行的进程比较多，系统很繁忙
+      Io bo:  磁盘写的数据量稍大，如果是大文件的写，10M以内基本不用担心，如果是小文件写2M以内基本正常
+      Cpu us: 持续大于50，服务高峰期可以接受
+      Cpu wa: 稍微有些高
+      Cpu id: 持续小于50，服务高峰期可以接受
+
+
+
+
+
+
+3. top
+
+  查看系统中运行的进程的状况
+  
+  常用操作:
+    1       多CPU下，显示每个CPU单个的信息
+    f       自定义显示列，通常需要加上CODE, DATA
+    o       调整列显示顺序
+    O       按某列排序
+    <,>     按前(后)列排序
+    H       显示线程
+    c       显示command的参数
+    u       显示某用户
+    n       最大显示行数
+    k       给某进程发送信号
+    d       自动刷新的时间间隔
+    W       当前设置保存到配置文件(否则，下次执行top时，设置会消失)
+    
+
+    
+
+    
+    
+    
+    
+4. iostat
+  
+  显示I/O系统的负载情况及分区状态信息. 
+  个人习惯，不太习惯使用iostat获取CPU相关信息
+  
+  参数说明:
+    -d          仅显示磁盘统计信息.
+    -m          以Mb为单位显示每秒的磁盘请求数,默认为Kb 
+    -h          每行之间有一空行，有时显示起来更清晰一些
+    -t          打印收集数据时的时间
+    -y          忽略第一次的显示
+    -x          显示扩展信息
+    
+    
+  常用命令:
+    iostat -dymx 3            只显示IO相关信息，3秒刷新一次
+    iostat -p sda             只显示Device为sda的信息
+    
+  补充知识:
+    step 1: 将许多逻辑的请求, 合并(merge), 送到请求队列(queue)
+    step 2: 请求队列的请求，会按先后顺序发送到设备
+              
+
+  显示格式:
+    Device            设备名称, 和/dev下的名称一致
+    tps               transfers per second, 指的是物理的(几个逻辑的IO可能会组合成一条)
+    Blk_read/s        从设备读，单位是KB, MB
+    Blk_wrtn/s        从设备写, 单位是KB, MB
+    Blk_read          读取的数据总量
+    Blk_wrtn          写入的数据总量
+   以下需要-x选项才能打印 
+    rrqm/s            每秒合并读取请求数
+    wrqm/s            每秒合并写入请求数
+    r/s               每秒发送到设备的读入请求数
+    w/s               每秒发送到设备的写入请求数
+    rsec/s
+    wsec/s
+    avgrq-sz          平均的请求扇区数量
+    avgqu-sz          平均的队列长度
+    await             I/O请求平均执行时间. 包括发送请求和执行的时间.单位是ms
+    r_await           读请求的平均执行时间
+    w_await           写请求的平均执行时间
+    svctm             无意义
+    %util             在I/O请求发送到设备期间,占用CPU时间的百分比.用于显示设备的带宽利用率.
+                      当这个值接近100%时,表示设备带宽已经占满.
+
+                     
+                     
+                     
+    
+    
+5. ps    
+
+  显示active processes的信息，非常详细。
+  ps的信息来源主要靠/proc目录，
+  
+  常用参数:
+   ps兼容几种linux的语法，并可以混用。因此，-a 和 a是有区别的。有三种格式-a, a, A，尽量选择一种格式看起来比较整齐。
+   选择进程也可以用grep，但有些效果就达不到，比如要显示线程。所以还是熟悉ps自带的选择进程参数比较好。
+   
+    简单选择进程:
+      -e            选择所有进程, (-A也是)
+      a             显示现行终端机下的所有程序，包括其他用户的程序
+      x             显示没有控制终端的进程
+     不常用
+      -N            显示所有的程序，除了执行ps指令终端机下的程序之外
+      t             只显示当前terminal的进程
+      -a            在t的基础上，除去了session leaders的进程，最经常使用的参数
+      r             仅仅运行的进程(没用)
+   列表式选择进程:
+    -C CMD        只显示某个命令的列表
+    -u user       显示某个用户的列表(比较有用，比grep方便)
+    -p pid        某个进程(方便)
+    -t            某个终端(tty)的列表
+    -T 　         显示现行终端机下的所有程序
+   输出格式:
+    u             以用户为主的格式来显示程序状况
+    -f 　         有用的是显示了完整的CMD
+    f             显示树状结构
+    
+    
+   显示线程:
+    -m            显示所有线程(太有用了), 有几个线程一目了然
+    
+  常用示例:
+    ps aux        绝对的最佳配置，程序员首选
+                  USER  PID  %CPU  %MEM  VSZ  RSS  TTY  STAT  START  TIME  COMMAND 
+                  
+    ps -ef        其中C=%CPU, STIME=START, 主要查看UID,PID,PPID间的关系
+                  UID  PID  PPID  C  STIME  TTY  TIME  CMD
+                  
+    ps -eF        主要查看SZ, RSS, 如果SZ大，RSS小，则性能会受到很大影响
+                  UID  PID  PPID  C  SZ  RSS  PSR  STIME  TTY
+                  
+    ps -ely       能看到WCHAN
+                  S  UID  PID  PPID  C  PRI  NI  RSS  SZ  WCHAN  TTY  TIME  CMD
+                  
+    ps -eo lstart,etime,cmd         查看时间
+                  STARTED   ELAPSED    CMD
+    
+  输出格式
+    经常使用的
+      USER                      进程所有者
+      PID                       process ID
+      PPID                      parent process ID
+      START                     没STARTED详细, 意思相同
+      STARTED                   进程运行的开始时刻
+      TIME                      cpu执行时间
+      ELAPSED                   进程运行时间
+      VSZ                       虚拟内存大小, KB
+      SZ                        = text + data + stack
+      RSS                       实际物理内存大小，KB
+      COMMAND                   要显示参数，必须的
+      
+    有意义的
+      BLOCKED                   可以看到哪些信号被进程block了
+      CAUGHT                    进程捕捉哪些信号
+      IGNORED                   被进程忽略的信号
+    
+    可能有用的
+      %CPU                      静态的cpu占有率可能没太大意义, 用top比较好
+      %MEM                      物理内存使用百分比, 也可用top去看
+      UID                       uid
+      GID                       gid
+      F                         flag
+      STAT:                     进程状态:
+      NI                        nice value
+      LWP                       轻量级的进程
+      NLWP
+      WCHAN                     程序卡在哪里内核函数了
+      TTY                       tty
+  
+  
+  
+  
+  
+  
+  
+6. strace
+
+  显示所有由用户空间程序发出的系统调用
+  
+  常用参数:
+    -c            产生统计汇总信息，非常有用
+    -f            同时跟踪fork和vfork出来的进程, 基本都需要加上
+
+    -p pid        跟踪的进程号, 可以有多个, -p 14653 -p 14117
+    -s size       默认每行显示32字节，但往往这个不够
+    -o filename   写入到文件
+    -ff           配合-o使用，将按进程分门别类的将信息保存在file.pid文件中
+    -T            这个选项显示单个系统调用耗时
+                    nanosleep({2, 0}, {2, 0})               = 0 <2.000850>
+    -r            显示相对的时间间隔, 这样解释: 调用sleep 2秒后，调用了exit()
+                    0.000080 nanosleep({2, 0}, {2, 0}) = 0
+                    2.001739 exit_group(0)             = ?
+                    看上去还是-T显示更友好些
+    -tt           同-r, 采用绝对时间
+  
+  常用命令:
+    strace -p 15092 -f -c
+                  查看统计信息(调用次数，花费时间), 首先使用
+    strace -p 15092 -fT -o info
+                  查看完统计信息后，对于引起注意的function, 通过生成的info，进一步查找原因
+  
+  
+  
+  
+  
+7. pstree
+
+  以树的形式显示进程间的关系
+  
+  常用选项:
+    -a              # 显示命令参数, 经常使用。所有的进程线程都不会折叠显示，所有会比较长
+    -H pid          # 高亮显示某进程
+    -p              # 显示进程号
+    -u              # 显示uid, 没有显示，表示和父进程uid一致
+  
+  显示格式:
+    init---4*[getty]                    # 有4个getty进程，叠加后显示更清晰
+    icecast2---13*[{icecast2}]          # 线程用{}扩起来，线程名字使用进程的名字
+    
+  常用命令
+    pstree -a root              # 查看root用户的进程信息
+    pstree -u -p -H 12306       # 显示uid, pid, 并对12306高亮
+    pstree -a                   # 查看进程参数
+    
+    
+    
+    
+    
+8. free
+
+  如需要更详细的内容，可以直接查看/proc/meminfo
+  
+  常用参数:
+    -k              # 单位KB
+    -m              # 单位MB
+    -g              # 单位GB
+    
+  显示格式:
+                 total       used       free     shared    buffers     cached
+    Mem:      32961924   32803356     158568          0     206348   19190408
+    -/+ buffers/cache:   13406600   19555324
+    Swap:     34996216   15285376   19710840   
+    
+    Mem行 - 站在操作系统的角度的统计
+      total = used + free;
+      shared: 目前已经废弃掉了，为0
+      
+    buffers/cache行 - 站在应用程序的角度统计
+      -       系统被用掉多少内存
+        used = used - buffers - cached        # 对于程序而言，buffer和cache都是可以被快速回收的，这部分自己也可以用
+      +       系统还有多少内存
+        free = free + buffers + cached        # 同上一样道理
+        
+    Swap行 - 没太大意义，只能说明曾经被使用过
+        
+   
+    
+    
+9. google CPU profiler
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+oprofile
+vargrind
+    
+    
+
+CPU性能分析工具：
+  vmstat                        # 查看CPU，更习惯用top
+  ps                            # 信息量非常丰富。但总体来说，没有动态的top显示直观，不常用。除非是需要查找某些top无法表示的字段
+  time                          # 答应程序从启动到结束的时间(real, user, sys), 经常使用，不多说。
+  strace                        # 首选的cpu profile工具，非常简单。
+  pstree                        # 查看进程间的关系。也可查看线程的数量。虽然ps也可查看树形结构，但pstree更清晰一些
+  top                           # 动态查看进程(CPU, MEM, IO)，首选工具
+  
+Memory性能分析工具：
+  vmstat                        # 查看Memory, 更习惯用top
+  top                           # 动态查看进程(CPU, MEM, IO)，首选工具
+  free                          # 80%的场景，总体内存使用情况用free就可以了，如果需要细分进程的内存使用信息，使用top
+  cat /proc/meminfo             # free也采集于此，非常全面，free不满足时使用。详见: linux系统信息.doc
+  cat /proc/slabinfo            # 比较高端的功能, 等什么时候发现meminfo中的Slab异常时，再来考虑研究这个吧。
+  cat /proc/pid/maps            # 比较高端的功能, 先要搞清楚程序内存的分配，对程序员用处不大
+  ipcs                          # 确定共享内存使用情况
+  ipcrm                         # 删除消息队列、信号集、或者共享内存标识
+  
+I/O性能分析工具：
+  vmstat                        # 更习惯用iostat
+  iostat                        # 无需多说, 唯一的问题就是要root权限
+  repquota
+  quotacheck
+  
+Network性能分析工具:
+  ifconfig
+  ethereal
+  tethereal
+  iptraf
+  iwconfig
+  nfsstat
+  mrtg
+  ntop
+  netstat
+  cat /proc/sys/net
+  
+
+CPU性能调优工具:
+  nice / renic
+  sysctl
+  
+Memory性能调优工具：
+  swapon
+  ulimit
+  sysctl
+  
+I/O性能调优工具：
+  edquota
+  quoton
+  sysctl
+  boot line:
+  elevator=
+
+Network性能调优工具：
+  ifconfig
+  iwconfig
+  sysctl
+
+
+
+CPU性能调整方法：
+Memory性能调整
+I/O性能调整
+Network性能调整
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    

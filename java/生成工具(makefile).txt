@@ -1,0 +1,54 @@
+生成工具: 将源代码作为输入转换为可执行文件。
+
+1. Ant(another neat tool)
+Ant的默认执行文件为build.xml文件。直接输入ant就能运行. 但是对于改变的名字，要输入ant -f NewName.xml运行
+
+每个生成文件由当个project元素组成, 该元素又包含多个target元素, 一个target是生成过程中已定义的一个步骤,它执行任意数量的操作。并且这些操作本身是由其他专用任务标签执行的。
+build.xml内容很简单，基本上一看就懂。
+
+
+
+2. Maven
+  pom.xml, pom是工程对象模型(Poject Object Model)的简写，类似Ant的build.xml一样。
+  
+  Maven为工程中的源文件，资源文件，配置文件，生成的输出和文档都制定了一个标准的目录结构。Maven鼓励使用标准目录布局，这样就不需要进行额外的配置
+  
+  Maven比Ant要复杂很多，所以举个例子说明一下:
+    mvn archetype:create -DgroupId=ce.demo.mvn -DartifactId=app       # groupId是一个工程的在全局中唯一的标识符, 区别于其它的工程; artifactId是app，那么该工程根目录的名称将为app
+    执行后会创建下列目录结构, 这就是Maven的标准目录布局
+      app
+      |-- pom.xml
+      `-- src
+          |-- main
+          |   `-- java
+          |       `-- ce
+          |           `-- demo
+          |               `-- mvn
+          |                   `-- App.java
+    其中pom.xml的内容大致如下:
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>ce.demo.mvn</groupId>
+        <artifactId>app</artifactId>
+        <packaging>jar</packaging>
+        <version>1.0</version>
+        <name>CE Maven Demo -- App</name>
+      </project>
+
+
+
+
+
+
+
+
+
+附1: jar包 && war包
+  jar包：通常是开发时要引用通用类，打成包便于存放管理。
+  war包: 是做好一个web应用后，通常是网站，打成包部署到容器中。
+
+
+
+
+
+

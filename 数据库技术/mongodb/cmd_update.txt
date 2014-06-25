@@ -1,0 +1,36 @@
+1. update()
+db.collection.update( criteria, objNew, upsert, multi )
+
+criteria: 查询条件, 类似where
+objNew:   update的object，也可以通过操作符，只更新其中的一部分
+upsert:   true表示upsert操作(update if present; insert (a single document) if missing)
+multi:    update只会更新搜索到的第一条数据，如果需要更新所有，multi要置为true
+          db.foo.update( { x : 1 , $atomic : 1 } , { $inc : { y : 1 } } , false , true );
+          如果加上了$atomic，表明对于每个document的操作是atomic的，但从整体update看，不是atomic的(粒度问题)
+
+
+2. 原子操作(atomic operation)
+mongodb的目标是"lightweight and fast"
+为此，牺牲了事务以及事务锁(traditional locking and complex transactions)
+
+当然，mongodb也还是提供了一些简单的原子操作:
+1. 操作符
+$set            // 插入或更新字段;          db.test.update({C2:1}, {$set: {C1:3}})
+$unset          // 删除字段;                db.test.update({C2:1}, {$unset: {C1:1}})
+$inc            // C2 += 2;                 db.test.update({C2:1}, {$inc: {C2:2}})
+$push           // 数组中append元素(单个)   db.test.update({C2:2}, {$push: {A: "a1", B:"b1"}}) -- 可以同时给多个数组插入，但不能插入一个数组多个 {$push: {A: "a1", A:"a2"}}) 将只会插入a2
+$pushAll        // 数组中append元素(多个)   db.test.update({C2:4}, {$pushAll: {A: ["a1", "a2"]}})
+$pull           // 数组中remove元素         db.test.update({C2:4}, {$pull: {A: "a1"}}) -- 如果有多个"a1"元素，将全部remove
+$pullAll        // 数组中remove元素          db.test.update({C2:4}, {$pullAll: {A: ["a1", "a2"]}})
+$bit            // 
+
+2. Update if Current
+这种update的思想，适用于任何地方，不仅仅是mongodb。类似于case锁
+step 1: get value -> old
+step 2: modify value -> new
+step 3: if (get() == old) update new;
+
+3. findAndModify()
+提供"find, modify, and return"的原子操作
+
+

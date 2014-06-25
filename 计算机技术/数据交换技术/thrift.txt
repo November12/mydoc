@@ -1,0 +1,89 @@
+1. 介绍
+  Thrift源于facebook，facebook提交Apache基金会将Thrift作为一个开源项目，
+  对于当时的facebook来说, 创造thrift是为了解决facebook系统中各系统间大数据量的传输通信以及系统之间语言环境不同需要跨平台的特性。
+  所以thrift可以支持非常多的语言，如:  C++, C#, Cocoa, Erlang, Haskell, Java, Ocami, Perl, PHP, Python, Ruby, Smalltalk. 
+  
+  在多种不同的语言之间通信thrift可以作为二进制的高性能的通讯中间件，支持数据(对象)序列化和多种类型的RPC服务。
+  Thrift适用于程序对程序静态的数据交换，需要先确定好他的数据结构，他是完全静态化的，当数据结构发生变化时，
+  必须重新编辑IDL文件，代码生成，再编译载入的流程，跟其他IDL工具相比较可以视为是Thrift的弱项，
+  Thrift适用于搭建大型数据交换及存储的通用工具，对于大型系统中的内部数据传输相对于JSON和xml
+  无论在性能、传输大小上有明显的优势。
+  
+  Thrift是IDL(interface definition language)描述性语言的一个具体实现，
+  IDL好处在于与具体的语言和平台都没有关系，移植性非常好。
+  
+  
+2. Thrift基础架构
+  Thrift 具有自己内部定义的传输协议规范(TProtocol)和传输数据标准(TTransports)
+  按层次关系，共有6层。
+  
+  1. 业务逻辑实现(Your Code)
+  2. 客户端和服务端对应的Service
+  3. 执行读写操作的计算结果
+  4. TProtocol
+  5. TTransports
+  6. 底层I/O通信
+  
+  
+3. 实现
+  3.1 数据类型
+    Base Types： 基本类型, string, int ...
+    Struct：结构体类型
+    Container：容器类型，即List、Set、Map
+    Exception：异常类型
+    Service： 定义对象的接口，和一系列方法
+
+  3.2 传输协议(TProtocol)
+    选择不同的传输协议，对性能影响非常大。总体来说，二进制协议比文本协议效率高，压缩比不压缩效率高。但具体选择，还要依托不同场景。
+    TBinaryProtocol:     二进制编码格式进行数据传输。
+    TCompactProtocol:    这种协议非常有效的，使用Variable-Length Quantity (VLQ) 编码对数据进行压缩。
+    TJSONProtocol:       文本协议, 使用JSON的数据编码协议进行数据传输。
+    TSimpleJSONProtocol: 文本协议, 提供JSON只写的协议，适用于通过脚本语言解析
+    TDebugProtocol:      在开发的过程中帮助开发人员调试用的，以文本的形式展现方便阅读。
+
+  3.3 传输层(TTransports)
+    TSocket:           使用堵塞式I/O进行传输，也是最常见的模式。
+    TFramedTransport:  使用非阻塞方式，按块的大小，进行传输，类似于Java中的NIO。
+    TFileTransport:    顾名思义按照文件的方式进程传输，虽然这种方式不提供Java的实现，但是实现起来非常简单。
+    TMemoryTransport:  使用内存I/O，就好比Java中的ByteArrayOutputStream实现。
+    TZlibTransport:    使用执行zlib压缩，不提供Java的实现。
+
+  3.4 服务端类型
+    TSimpleServer:     单线程服务器端使用标准的堵塞式I/O。
+    TThreadPoolServer: 多线程服务器端使用标准的堵塞式I/O。
+    TNonblockingServer:多线程服务器端使用非堵塞式I/O，并且实现了Java中的NIO通道。
+ 
+
+4. Thrift编程
+  step1: 编写idl
+    namespace java com.xmatthew.thrift.demo
+
+    struct Info {
+      1: string key,
+      2: binary value,
+    }
+
+    service DemoService{
+        void add(1:string key, 2:binary value);
+        binary get(1:string key),
+    } 
+
+  step2: 生成相应的语言代码
+  
+  step3: 引入代码，编写客户端，服务端程序
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+

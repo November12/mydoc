@@ -1,0 +1,165 @@
+1. HTTP不是万能的
+  http协议非常通用，但不能适应所有的场合。
+  比如收发大型文件，处理金融信息，多人游戏(实时)等。
+  因此，有时候需要优化http协议，甚至设计和实现新的协议。
+
+  另一方面，如果是已有的系统，也不得不使用原有的协议去开发。(别无选择)
+  
+  
+2. Netty介绍
+  Netty 是一个异步的，事件驱动的网络编程框架和工具。(异步，事件驱动)
+  使用Netty可以快速开发出可维护的，高性能、高扩展能力的协议服务及其客户端应用。(快速，可维护，高性能，可扩展)
+  当然，这些特性其它框架也是这么说的。
+  
+  
+3. Netty设计总览
+  3.1 Channel
+    这个编程接口抽象了所有点对点的通信操作，包括同步和异步。
+  
+  3.2 ChannelPipeline
+    一个ChannelEvent被一组ChannelHandler处理。
+    通过管道，可以将事件灵活的串联起来。
+    
+  3.3 组件的支持
+    略
+    
+    
+4. 核心类
+  ChannelHandler       事件处理类
+  ChannelFactory       创建和管理Channel及其相关资源
+  ChannelPipeline      管道类
+  ChannelBuffer        Netty的数据格式
+  
+  有什么感触? 很简单吧，框架收到数据后，放入ChannelBuffer，通过ChannelPipeline，送到ChannelHandler，
+  Handler处理完以后，原路返回请求。
+  
+  这里面有3个重要的概念, 缓冲(buffer)，通道(channel)，事件模型(event model)
+  
+  
+5. ChannelBuffer
+  Pipeline并不解释客户端发送的数据，数据到达netty框架后，将其封装为ChannelBuffer在框架内部传输。
+  ChannelBuffer有两个指针，readerIndex和writerIndex。通过这两个指针，分为了3个区域: 已读|可读|可写
+  
+  
+6. 小结
+  netty是NIO的扩展，是NIO的框架，它并不涉及到协议的问题，可以用来做任何想做的事情。
+  
+  
+  
+  
+  
+  
+附1: 代码示例
+  1.1 服务器端
+    public class MessageServer {  
+      public static void main(String[] args) throws Exception {  
+          // 启动服务的工作，就交给 ServerBootstrap
+          ServerBootstrap bootstrap = new ServerBootstrap(  
+                  new NioServerSocketChannelFactory(  
+                          Executors.newCachedThreadPool(),  
+                          Executors.newCachedThreadPool()));  
+          bootstrap.setPipelineFactory(new MessageServerPipelineFactory());  
+          bootstrap.bind(new InetSocketAddress(8080));  
+      }  
+    }
+    
+    // pipeline要指明整个处理流程(数据解码, 数据处理，数据编码)
+    public class MessageServerPipelineFactory implements ChannelPipelineFactory {
+      public ChannelPipeline getPipeline() throws Exception {  
+          ChannelPipeline pipeline = pipeline();  
+          pipeline.addLast("decoder", new MessageDecoder());  
+          pipeline.addLast("encoder", new MessageEncoder());  
+          pipeline.addLast("handler", new MessageServerHandler());  
+          return pipeline;  
+      } 
+    }
+    
+    // 解码的类型是ChannelBuffer，这个太关键了
+    public class MessageDecoder extends FrameDecoder {  
+      protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer) throws Exception {
+          if (buffer.readableBytes() < 4) {  
+              return null; 
+          }  
+          int dataLength = buffer.getInt(buffer.readerIndex());  
+          if (buffer.readableBytes() < dataLength + 4) {  
+              return null;
+          }  
+          buffer.skipBytes(4);
+          byte[] decoded = new byte[dataLength];
+          buffer.readBytes(decoded);
+          String msg = new String(decoded);
+          return msg;  
+      }  
+    }
+    
+    // Decoder的输出，流入到Handler成为输入。Handler处理完以后，依然通过event流出
+    public class MessageServerHandler extends SimpleChannelUpstreamHandler {  
+        private static final Logger logger = Logger.getLogger(
+                MessageServerHandler.class.getName());  
+       
+        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {  
+            if (!(e.getMessage() instanceof String)) {  
+                return;
+            }  
+            String msg = (String) e.getMessage();
+            e.getChannel().write(msg);
+        }  
+       
+        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {  
+            logger.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
+            e.getChannel().close();  
+        }
+    }  
+
+    // 编码
+    public class MessageEncoder extends OneToOneEncoder {  
+      protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {  
+          if (!(msg instanceof String)) {  
+              return msg;
+          }  
+          String res = (String)msg;  
+          byte[] data = res.getBytes();  
+          int dataLength = data.length;  
+          ChannelBuffer buf = ChannelBuffers.dynamicBuffer();//(2)   
+          buf.writeInt(dataLength);  
+          buf.writeBytes(data);  
+          return buf;
+      }
+    }  
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+nio
+mina
+
+servlet容器: tomcat jetty Servlet规范
+
+
+

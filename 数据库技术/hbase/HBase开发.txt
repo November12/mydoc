@@ -1,0 +1,86 @@
+4. 客户端交互
+  和HBase交互的方法, 和Hadoop类似，主要有
+    Java API(最常用的交互方式)
+    REST
+    Thrift
+    Avro
+    
+    
+    
+    
+
+    
+    
+    
+    
+附一: shell command
+
+help COMMAND
+  1) 通常类
+    status                                exp: 1 servers, 0 dead, 3.0000 average load
+    version                               exp: 0.94.18, r1577788, Sat Mar 15 04:46:47 UTC 2014
+    whoami                                当前用户
+  2) DDL类 (Data Definition Language)
+    alter
+    alter_async
+    alter_status
+    create                                创建table
+    describe
+    disable
+    disable_all
+    drop
+    drop_all
+    enable
+    enable_all
+    exists
+    is_disabled
+    is_enabled
+    list                                  列举所有的table
+    show_filters
+
+  3) DML类 (Data Manipulation Language)
+    count
+    delete
+    deleteall
+    get                                   通过key来查询
+    get_counter
+    incr
+    put                                   写入记录
+    scan                                  查询一段记录
+    truncate
+    
+  4) tools
+    assign
+    balance_switch
+    balancer
+    close_region
+    compact
+    flush
+    hlog_roll
+    major_compact
+    move
+    split
+    unassign
+    zk_dump
+
+  5) replication
+    add_peer
+    disable_peer
+    enable_peer
+    list_peers
+    list_replicated_tables
+    remove_peer
+    start_replication
+    stop_replication
+
+  6) snapshot
+    clone_snapshot
+    delete_snapshot
+    list_snapshots
+    restore_snapshot
+    snapshot
+
+  7) security
+    grant
+    revoke
+    user_permission

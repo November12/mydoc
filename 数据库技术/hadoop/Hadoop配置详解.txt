@@ -1,0 +1,307 @@
+在这里将3个配置文件的所有配置列举如下，混个眼熟，也以便今后查阅。
+所有的信息来源于 core-default.xml, hdfs-default.xml, mapred-default.xml
+以下配置的顺序通过分类和重要性排序，和.xml中的顺序不一致
+
+1. core-default.xml
+
+1.1 本地文件设置
+  hadoop.tmp.dir                      临时目录设定(/tmp/hadoop-${user.name})
+  hadoop.logfile.size                 日志文件最大的size(10000000,10M)
+  hadoop.logfile.count                日志文件最大数量(10)
+  
+1.2 IO相关设置
+  io.bytes.per.checksum               校验位数(512)
+  io.skip.checksum.errors             校验出错后是抛出异常(false)还是略过标识(true)。(false)
+  io.compression.codecs               压缩和解压类的列表 - ★可添加压缩类
+  io.serializations                   序例化类设定(rg.apache.hadoop.io.serializer.WritableSerialization) 
+  
+1.3 namenode设置
+  fs.default.name                     文件URI标识设定。- 必须进行的配置
+                                      namenode位置, 如hdfs://10.15.62.8:9000
+                                      若使用本地文件系统，填写file:///
+  fs.trash.interval                   hdfs文件删除自动转移到垃圾箱, 此为垃圾箱文件清除时间。(0, disable)
+  fs.file.impl                        本地文件操作类(org.apache.hadoop.fs.LocalFileSystem)
+  fs.hdfs.impl                        HDFS文件操作类(org.apache.hadoop.hdfs.DistributedFileSystem)
+  fs.*.impl                           诸多其它文件的操作类设定
+  
+1.4 secondarynamenode 设置
+  fs.checkpoint.dir                   辅助namenode的临时目录(${hadoop.tmp.dir}/dfs/namesecondary)
+  fs.checkpoint.edits.dir             不详(${fs.checkpoint.dir})
+  fs.checkpoint.period                checkpoint的时间间隔(3600)
+  fs.checkpoint.size                  checkpoint的最大文件size(67108864, 64)
+                                      满足fs.checkpoint.period，fs.checkpoint.size条件之一即可
+                                     
+1.5 cache相关设置
+  io.file.buffer.size                 流文件的缓冲区大小(4096,4k) - ★这个比较寒酸
+  local.cache.size                    缓存大小(10737418240, 10GB)
+  
+1.6 SequenceFile设置
+  io.seqfile.compress.blocksize       seqfile中，block的最小size(1000000, 1M), 详见Hadoop IO.txt
+  io.seqfile.lazydecompress           不详(true)
+  io.seqfile.sorter.recordlimit       内存中排序的最大记录数(1000000,100w)，超过此值，需要通过临时文件辅助。
+  
+1.7 MapFile设置
+  io.mapfile.bloom.size               BloomMapFiler过滤量(1048576,1M)
+  io.mapfile.bloom.error.rate         0.005
+  
+1.8 安全相关设置
+  hadoop.security.authorization       服务端认证开启(false)
+  hadoop.security.authentication      认证方式为simple或kerberos(simple)
+  hadoop.security.token.service.use_ip是否开启使用IP地址作为连接的开关(true)
+  hadoop.security.group.mapping       组内用户的列表的类设定(org.apache.hadoop.security.ShellBasedUnixGroupsMapping) 
+  hadoop.security.uid.cache.secs      验证成功后的保鲜时间(14400,4小时)  
+
+1.9 ipc设置
+  ipc.client.idlethreshold            当连接数超过一定的阀值时(4000), 探寻空闲连接，将其清理掉。
+  ipc.client.kill.max                 每次最大清理的连接数(10)
+  ipc.client.connection.maxidletime   心跳包的最长时限(10000,10秒)
+  ipc.client.connect.max.retries      建立连接最大的重试次数
+  ipc.server.listen.queue.size        监听队列大小(128)
+  ipc.server.tcpnodelay               是否开启TCP的Nagle算法(false)，开启后延迟减少，但小数据包增多
+  ipc.client.tcpnodelay               同上(false)
+
+1.10 rpc设置
+  hadoop.rpc.socket.factory.class.default         socket工厂类(org.apache.hadoop.net.StandardSocketFactory)
+  hadoop.rpc.socket.factory.class.ClientProtocol  不详
+  hadoop.socks.server                             socket server的地址(无)
+
+1.11 rack机架设置
+  topology.node.switch.mapping.impl   调用脚本，获取rack信息(org.apache.hadoop.net.ScriptBasedMapping)
+  topology.script.file.name           脚本路径(无)
+  topology.script.number.args         脚本能够接受的最大参数个数(100)
+  
+1.12 算法相关设置
+  hadoop.util.hash.type               设置哈希函数类(murmur), 貌似没有谁会去设置这个吧
+
+1.13 尚不了解的设置
+  hadoop.native.lib                   使用本地hadoop库标识(true)
+  hadoop.http.filter.initializers     http服务器过滤链设置()
+  webinterface.private.actions        Web交互的行为设定(false)
+
+ 
+2. hdfs-default.xml
+  很容易确认哪些选项是放在hdfs-default.xml的，全都是dfs前缀
+  
+2.1 文件目录相关设置
+dfs.namenode.logging.level  输出日志类型(info)
+  
+
+2.2 http相关设置
+dfs.http.address  namenode http地址 (0.0.0.0:50070)
+dfs.secondary.http.address  辅助namenode http地址(0.0.0.0:50090)
+dfs.datanode.http.address  datanode http地址 (0.0.0.0:50075)
+
+2.3 https相关设置
+dfs.https.enable  支持https访问 (false)
+dfs.https.need.client.auth 是否需要ssl验证权限 (false)
+dfs.https.server.keystore.resource  Ssl密钥服务端的配置文件 (ssl-server.xml)
+dfs.https.client.keystore.resource  Ssl密钥客户端的配置文件 (ssl-client.xml)
+dfs.https.address  namenode https地址 (0.0.0.0:50470)
+dfs.datanode.https.address  datanode https地址 (0.0.0.0:50475)
+
+2.4 节点间通讯设置
+dfs.datanode.address          和client及其他节点，读写block是通过DataXceiverServer的，而不是ipc(0.0.0.0:50010)
+dfs.datanode.ipc.address      datanode ipc地址 (0.0.0.0:50020)
+dfs.datanode.handler.count    不详 (3)
+
+
+2.5 block相关设置
+dfs.replication             缺省的块复制数量 (3)
+dfs.replication.max         块复制的最大数量 (512)
+dfs.replication.min         块复制的最小数量, 即写入min副本后，返回写成功 (1)
+dfs.block.size  缺省的文件块大小 (67108864,64M)
+
+
+
+dfs.datanode.dns.interface  数据节点采用IP地址标识 (default)
+dfs.datanode.dns.nameserver  指定DNS的IP地址 (default)
+
+dfs.replication.considerLoad  加载目标或不加载的标识 (true)
+
+dfs.default.chunk.view.size  浏览时的文件块大小设置为32K (32768)
+dfs.datanode.du.reserved  每个卷预留的空闲空间数量 (0)
+dfs.name.dir  存贮在本地的名字节点数据镜象的目录,作为名字节点的冗余备份 (${hadoop.tmp.dir}/dfs/name)
+dfs.name.edits.dir  存贮文件操作过程信息的存贮目录 (${dfs.name.dir})
+dfs.web.ugi  Web接口访问的用户名和组的帐户设定 (webuser,webgroup)
+dfs.permissions  文件操作时的权限检查标识。 (true)
+dfs.permissions. 超级用户的组名定义 (supergroup supergroup)
+dfs.block.access.token.enable  数据节点访问令牌标识 (false)
+dfs.block.access.key.update.interval  升级访问钥时的间隔时间 (600)
+dfs.block.access.token.lifetime  访问令牌的有效时间 (600)
+dfs.data.dir  数据节点的块本地存放目录 (${hadoop.tmp.dir}/dfs/data)
+dfs.datanode.data.dir.perm  数据节点的存贮块的目录访问权限设置 (755)
+
+
+dfs.df.interval  磁盘空间统计间隔为6秒 (60000)
+dfs.client.block.write.retries  块写入出错时的重试次数 (3)
+dfs.blockreport.intervalMsec  块的报告间隔时为1小时 (3600000)
+dfs.blockreport.initialDelay  块顺序报告的间隔时间 (0)
+dfs.heartbeat.interval  数据节点的心跳检测间隔时间 (3)
+dfs.namenode.handler.count  名称节点的连接处理的线程数量 (10)
+dfs.safemode.threshold.pct  启动安全模式的阀值设定(0.999f)
+dfs.safemode.extension  当阀值达到量值后扩展的时限 (30000)
+dfs.balance.bandwidthPerSec  启动负载均衡的数据节点可利用带宽最大值为1M (1048576)
+dfs.hosts   可与名称节点连接的主机地址文件指定。 (无)
+dfs.hosts.exclude   不充计与名称节点连接的主机地址文件设定 (无)
+dfs.max.objects  文件数、目录数、块数的最大数量 (0)
+dfs.namenode.decommission.interval  名称节点解除命令执行时的监测时间周期 (30)
+dfs.namenode.decommission.nodes.per.interval  名称节点解除命令执行是否完检测次数 (5)
+dfs.replication.interval  名称节点计算数据节点的复制工作的周期数. (3)
+dfs.access.time.precision  充许访问文件的时间精确到1小时 (3600000)
+dfs.support.append  是否充许链接文件指定 (false)
+dfs.namenode.delegation.key.update-interval  名称节点上的代理令牌的主key的更新间隔时间为24小时 (86400000)
+dfs.namenode.delegation.token.max-lifetime  代理令牌的有效时间最大值为7天 (604800000)
+dfs.namenode.delegation.token.renew-interval  代理令牌的更新时间为24小时 (86400000)
+dfs.datanode.failed.volumes.tolerated  决定停止数据节点提供服务充许卷的出错次数。0次则任何卷出错都要停止数据节点 (0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3. mapred-default.xml
+
+3.1 history相关设置
+hadoop.job.history.location               对于已经完成的job，会在jobtracker上留下两个文件
+                                          job_201209062254_0003_conf.xml     job的配置文件
+                                          job_201209062254_0003_1346981800709_hadoop_TeraSort   job运行信息文件
+hadoop.job.history.user.location          如果不想留下job的痕迹，可以在此关闭none
+mapred.job.tracker.history.completed.location   同上
+
+3.2 排序相关设置
+io.sort.factor                            每次合并的文件数(10)
+io.sort.mb                                排序文件的内存缓存大小(100, 100MB)
+io.sort.record.percent                    排序线程阻塞的内存缓存剩余比率(0.05)
+io.sort.spill.percent 0.8                 当缓冲占用量为该值时，线程需要将内容先备份到磁盘中。     
+io.map.index.skip 0                       索引条目的间隔设定     
+mapred.job.tracker  local                 作业跟踪管理器是否和MR任务在一个进程中     
+mapred.job.tracker.http.address 0.0.0.0:50030 作业跟踪管理器的HTTP服务器访问端口和地址     
+mapred.job.tracker.handler.count           10 作业跟踪管理器的管理线程数,线程数比例是任务管理跟踪器数量的0.04     
+mapred.task.tracker.report.address     127.0.0.1:0 任务管理跟踪器的主机地址和端口地址
+      
+mapred.local.dir                           ${hadoop.tmp.dir}/mapred/local  MR的中介数据文件存放目录     
+mapred.system.dir                          ${hadoop.tmp.dir}/mapred/system MR的控制文件存放目录     
+mapreduce.jobtracker.staging.root.dir      ${hadoop.tmp.dir}/mapred/staging 每个正在运行作业文件的存放区     
+mapred.temp.dir                            ${hadoop.tmp.dir}/mapred/temp   MR临时共享文件存放区        
+mapred.local.dir.minspacestart             0 MR本地中介文件删除时，不充许有任务执行的数量值。     
+mapred.local.dir.minspacekill              0 MR本地中介文件删除时，除非所有任务都已完成的数量值。     
+mapred.tasktracker.expiry.interval 600000 任务管理跟踪器不发送心跳的累计时间间隔超过600秒，则任务管理跟踪器失效     
+mapred.tasktracker.resourcecalculatorplugin   指定的一个用户访问资源信息的类实例     
+mapred.tasktracker.taskmemorymanager.monitoring-interval 5000 监控任务管理跟踪器任务内存使用率的时间间隔     
+mapred.tasktracker.tasks.sleeptime-before-sigkill       5000 发出进程终止后，间隔5秒后发出进程消亡信号
+      
+mapred.map.tasks                                        2 每个作业缺省的map任务数为2     
+mapred.reduce.tasks                                   1 每个作业缺省的reduce任务数为1     
+mapreduce.tasktracker.outofband.heartbeat               false   让在任务结束后发出一个额外的心跳信号     
+mapreduce.tasktracker.outofband.heartbeat.damper        1000000 当额外心跳信号发出量太多时，则适当阻止
+      
+mapred.jobtracker.restart.recover                    false   充许任务管理器恢复时采用的方式     
+mapred.jobtracker.job.history.block.size            3145728 作业历史文件块的大小为3M      
+mapreduce.job.split.metainfo.maxsize                10000000 分隔元信息文件的最大值是10M以下
+      
+mapred.jobtracker.taskScheduler                      org.apache.hadoop.mapred.JobQueueTaskScheduler 设定任务的执行计划实现类     
+mapred.jobtracker.taskScheduler.maxRunningTasksPerJob   作业同时运行的任务数的最大值     
+mapred.map.max.attempts                              4 Map任务的重试次数     
+mapred.reduce.max.attempts                           4 Reduce任务的重试次数     
+mapred.reduce.parallel.copies                         5 在复制阶段时reduce并行传送的值。     
+mapreduce.reduce.shuffle.maxfetchfailures            10 取map输出的最大重试次数     
+mapreduce.reduce.shuffle.connect.timeout             180000 REDUCE任务连接任务管理器获得map输出时的总耗时是3分钟          
+      
+mapreduce.reduce.shuffle.read.timeout                180000 REDUCE任务等待map输出数据的总耗时是3分钟     
+mapred.task.timeout                                  600000 如果任务无读无写时的时间耗时为10分钟，将被终止     
+mapred.tasktracker.map.tasks.maximum               2 任管管理器可同时运行map任务数为2     
+mapred.tasktracker.reduce.tasks.maximum             2 任管管理器可同时运行reduce任务数为2     
+mapred.jobtracker.completeuserjobs.maximum  100 当用户的完成作业数达100个后，将其放入作业历史文件中     
+mapreduce.reduce.input.limit                -1 Reduce输入量的限制。     
+mapred.job.tracker.retiredjobs.cache.size   1000 作业状态为已不在执行的保留在内存中的量为1000     
+mapred.job.tracker.jobhistory.lru.cache.size 5 作业历史文件装载到内存的数量     
+mapred.child.java.opts                      -Xmx200m 启动task管理的子进程时的内存设置     
+mapred.child.env                                    子进程的参数设置     
+mapred.child.ulimit                                 虚拟机所需内存的设定。     
+mapred.cluster.map.memory.mb                -1       
+mapred.cluster.reduce.memory.mb             -1       
+mapred.cluster.max.map.memory.mb            -1       
+mapred.cluster.max.reduce.memory.mb         -1       
+mapred.job.map.memory.mb                    -1       
+mapred.job.reduce.memory.mb                 -1       
+mapred.child.tmp                            /tmp    Mr任务信息的存放目录     
+mapred.inmem.merge.threshold                1000 内存中的合并文件数设置     
+mapred.job.shuffle.merge.percent            0.66                                                                                           
+mapred.job.shuffle.input.buffer.percent     0.7       
+mapred.job.reduce.input.buffer.percent      0       
+mapred.map.tasks.speculative.execution      true    Map任务的多实例并行运行标识     
+mapred.reduce.tasks.speculative.execution   true    Reduce任务的多实例并行运行标识     
+mapred.job.reuse.jvm.num.tasks 1 每虚拟机运行的任务数     
+mapred.min.split.size 0 Map的输入数据被分解的块数设置     
+mapred.jobtracker.maxtasks.per.job -1 一个单独作业的任务数设置     
+mapred.submit.replication 10 提交作业文件的复制级别     
+mapred.tasktracker.dns.interface default      任务管理跟踪器是否报告IP地址名的开关      
+mapred.tasktracker.dns.nameserver default      作业和任务管理跟踪器之间通讯方式采用的DNS服务的主机名或IP地址     
+tasktracker.http.threads 40 http服务器的工作线程数量     
+mapred.task.tracker.http.address 0.0.0.0:50060 任务管理跟踪器的http服务器的地址和端口     
+keep.failed.task.files false        失败任务是否保存到文件中
+      
+mapred.output.compress false        作业的输出是否压缩     
+mapred.output.compression.type RECORD       作业输出采用NONE, RECORD or BLOCK三种方式中一种压缩的写入到流式文件     
+mapred.output.compression.codec org.apache.hadoop.io.compress.DefaultCodec 压缩类的设置     
+mapred.compress.map.output false                                     Map的输出是否压缩     
+mapred.map.output.compression.codec org.apache.hadoop.io.compress.DefaultCodec Map的输出压缩的实现类指定     
+map.sort.class org.apache.hadoop.util.QuickSort          排序键的排序类指定     
+mapred.userlog.limit.kb 0 每个任务的用户日志文件大小     
+mapred.userlog.retain.hours 24 作业完成后的用户日志留存时间为24小时     
+mapred.user.jobconf.limit 5242880 Jobconf的大小为5M     
+mapred.hosts                                           可与作业管理跟踪器连接的主机名     
+mapred.hosts.exclude                                            不可与作业管理跟踪器连接的主机名     
+mapred.heartbeats.in.second                     100 作业管理跟踪器的每秒中到达的心跳数量为100     
+mapred.max.tracker.blacklists                   4 任务管理跟踪器的黑名单列表的数量     
+mapred.jobtracker.blacklist.fault-timeout-window 180 任务管理跟踪器超时180分钟则訪任务将被重启     
+mapred.jobtracker.blacklist.fault-bucket-width  15       
+mapred.max.tracker.failures                   4 任务管理跟踪器的失败任务数设定     
+jobclient.output.filter                         FAILED              控制任务的用户日志输出到作业端时的过滤方式     
+mapred.job.tracker.persist.jobstatus.active     false               是否持久化作业管理跟踪器的信息     
+mapred.job.tracker.persist.jobstatus.hours      0 持久化作业管理跟踪器的信息的保存时间     
+mapred.job.tracker.persist.jobstatus.dir        /jobtracker/jobsInfo 作业管理跟踪器的信息存放目录     
+mapreduce.job.complete.cancel.delegation.tokens true                恢复时是否变更领牌        
+mapred.task.profile                             false               任务分析信息是否建设标志     
+mapred.task.profile.maps                        0-2                 设置map任务的分析范围     
+mapred.task.profile.reduces                     0-2                 设置reduce任务的分析范围     
+mapred.line.input.format.linespermap           1 每次切分的行数设置     
+mapred.skip.attempts.to.start.skipping          2 在跳转模式未被设定的情况下任务的重试次数                                                                                         
+mapred.skip.map.auto.incr.proc.count            true                MapRunner在调用map功能后的增量处理方式设置     
+mapred.skip.reduce.auto.incr.proc.count        true                在调用reduce功能后的增量处理方式设置     
+mapred.skip.out.dir                                                  跳过记录的输出目录     
+mapred.skip.map.max.skip.records             0       
+mapred.skip.reduce.max.skip.groups            0       
+job.end.retry.attempts                          0 Hadoop偿试连接通知器的次数       
+job.end.retry.interval                         30000 通知偿试回应的间隔操作为30秒     
+hadoop.rpc.socket.factory.class.JobSubmissionProtocol   指定与作业跟踪管理器的通讯方式，缺省是采用rpc方式     
+mapred.task.cache.levels                             2 任务缓存级别设置     
+mapred.queue.names                                default 分隔作业队例的分隔符设定     
+mapred.acls.enabled                                  false  指定ACL访问控制列表     
+mapred.queue.default.state                            RUNNING 定义队列的状态     
+mapred.job.queue.name                             default 已提交作业的队列设定     
+mapreduce.job.acl-modify-job                                指定可修改作业的ACL列表     
+mapreduce.job.acl-view-job                                  指定可浏临作业的ACL列表     
+mapred.tasktracker.indexcache.mb                 10 任务管理跟踪器的索引内存的最大容器     
+mapred.combine.recordsBeforeProgress              10000 在聚合处理时的记录块数
+      
+mapred.merge.recordsBeforeProgress              10000 在汇总处理时的记录块数     
+mapred.reduce.slowstart.completed.maps            0.05       
+mapred.task.tracker.task-controller               org.apache.hadoop.mapred.DefaultTaskController 任务管理器的设定     
+mapreduce.tasktracker.group                                                                      任务管理器的组成员设定     
+mapred.healthChecker.script.path                                                                脚本的绝对路径指定，这些脚本是心跳服务的     
+mapred.healthChecker.interval                     60000 节点心跳信息的间隔     
+mapred.healthChecker.script.timeout                600000       
+mapred.healthChecker.script.args                                                                  参数列表
+      
+mapreduce.job.counters.limit                          120 
+

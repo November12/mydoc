@@ -1,0 +1,69 @@
+如果只希望用户使用samba，却不需要进入命令行模式，可以将home目录设成/dev/null ，命令行设成/bin/false									
+
+创建用户									
+
+	方式一. 把UNIX用户转换成Linux/Samba/Windows用户,生成smbpasswd 文件								
+
+		cat /etc/passwd | mksmbpasswd.sh > /etc/samba/smbpasswd							
+
+	方式二. 或者用smbpasswd命令来创建用户								
+
+配置smb.conf									
+
+	Global Settings								
+
+		workgroup = ap					NT-Domain-Name or Workgroup-Name， windows的工作组可以由自己随意改动，不影响权限等问题，纯粹为了方便，而domain不同，每个domain都至少有一台服务器，要想加入一个domain，需要域管理员在服务器端开通，并帮助你把电脑注册到域上		
+									
+		netbios name = SMBServer					别人在网络邻居里看到的你的机器名		
+									
+		server string = Samba Server					对本机的一个描述		
+
+		hosts allow = 192.168.1. 192.168.2. 127.					允许登陆的网段		
+
+		security = user					share: 任何人都可以访问，user: 使用smbpasswd里的用户名和密码，server: 服务器方式验证身份		
+
+		encrypt password = yes					使用加密的密码		
+
+		logon script = logon.bat							
+
+		wins support = yes							
+
+	Share Definitions								
+
+		[netlogon]							
+
+		comment = Initialization Scripts							
+
+		path = /home/netlogon | path = /home/%U | 							
+
+		read only = yes | writable = yes							
+
+		guest ok = yes							
+
+		browseable = no			
+
+[hujj]
+    path=/home/hujj
+    writeable=yes
+    create mask = 0664
+    directory mask = 0775
+    browseable = yes
+    valid users =@hujj    
+
+	验证smb.conf配置正确								
+
+		testparm							
+
+
+重起samba									
+
+	service smb restart							
+
+
+验证配置正确									
+
+	smbclient -L //SMBServer								
+
+异常处理
+  
+  1) 如果发现有"无法连接"或者"没有权限", 请先检查SELinux

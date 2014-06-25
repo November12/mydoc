@@ -1,0 +1,288 @@
+1. Mongostat                        ★★★★★ (异常时直奔Mongostat)
+    一定能找到些线索
+
+2. Database Profiler                ★★★★    (对于慢查询的优化非常有用) 
+db.getProfilingStatus()
+{ "was" : 0, "slowms" : 100 }       0: off  1:慢操作(ms)  2: all
+db.setProfilingLevel(1, 5000)
+db.system.profile.find()            // Capped Collection.
+
+
+3. Http Console(Web控制台)           ★★★     (显示的内容，通过shell cmd都可以看到，个人更习惯shell)
+运行时要加上--rest选项
+http://10.7.3.95:11000/， 端口号为监听端口 + 1000
+
+    
+4. mongo Shell Commands             ★★★★★  (使用频率最高的方法)
+4.1 db.currentOp()                                      // 
+    查看当前db操作，数据库异常的时候很有用(看看什么op被卡住)
+    
+4.2 db.serverStatus()
+    很全面得统计信息，日常维护(统计数据) 以及 异常，都非常有用
+
+4.3 db.stats()
+    查看数据库状态信息。(很简单的信息)
+    
+4.4 explain()
+    Exp: db.foo.find().explain()
+    针对查询语句的诊断。(非常有用，不多说了)
+    
+4.5 stats()
+    Exp: db.ST37014.stats();
+    
+
+5. Hosted Monitoring                    ★   (应该成为最常见的诊断方式，但此类工具尚不成熟)
+    最著名的，当然是MongoDB Monitoring Service(MMS)。但是必须连上10gen主页才能获取信息。
+
+6. diagLogging command                  ★   (暂时没有想出可以用到的地方)
+    用于操作的回放, 会在data目录下创建类似diaglog.4f44ad68的文件
+    nc 10.7.03.97 27017 < diaglog.4f44ad68 | hexdump -c
+
+7. mongosniff                           ★   (了解mongo原理的时候有些用途)
+    类似tcpdump，但只监控mongod收发的包
+    mongosniff --source NET lo port
+    
+8. mongotop                             ★★★★ (高cpu负荷的时候使用)
+    Cpu都耗在什么地方去了
+
+9. Monitoring Adaptors
+
+
+Checking Server Memory Usage
+mongodb使用mmap来管理内存(换句话说，交给操作系统去管理内存)
+mongodb会耗尽所有的内存
+
+10. 一些linux的工具
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+db.currentOp()                                      // 
+{
+        "inprog" : [
+                {
+                        "opid" : 7783908,               // 自增长的id号，可通过db.killOp(7783908)将其杀之
+                        "active" : true,                // true: active; false: queue
+                        "lockType" : "read",            // none|read|write, 详见 concurrency page.
+                        "waitingForLock" : false,       // true: 需要lock，但没有申请到
+                        "secs_running" : 2,
+                        "op" : "getmore",               // query, update, ...
+                        "ns" : "local.oplog.$main",     // namespace (database + collection)
+                        "query" : {             
+
+                        },
+                        "client" : "10.7.3.97:50984",   
+                        "desc" : "conn",                // conn: client连接
+                        "threadId" : "0x468f1940",      
+                        "connectionId" : 1,
+                        "numYields" : 0                 // 操作数
+                }
+        ]
+}
+
+db.serverStatus()
+{
+        "host" : "localhost.localdomain:10000",                 
+        "version" : "2.0.1",
+        "process" : "mongod",
+        "uptime" : 2024005,
+        "uptimeEstimate" : 2022456,
+        "localTime" : ISODate("2012-02-22T11:28:24.226Z"),
+        "globalLock" : {
+                "totalTime" : 2024004753204,
+                "lockTime" : 2843160162,
+                "ratio" : 0.0014047201013235155,                // lockTime / totalTime; 被锁住的时间百分比
+                "currentQueue" : {                              // 当前队列
+                        "total" : 0,
+                        "readers" : 0,
+                        "writers" : 0
+                },
+                "activeClients" : {                             // 当前处理
+                        "total" : 1,
+                        "readers" : 1,
+                        "writers" : 0
+                }
+        },
+        "mem" : {                                               // 内存情况(MB)
+                "bits" : 64,
+                "resident" : 86,
+                "virtual" : 365994,                             // 这里可能是很大的数字，是正常的，不用管它
+                "supported" : true,
+                "mapped" : 182664,                              // 所有数据库的大小
+                "mappedWithJournal" : 365328
+        },
+        "connections" : {
+                "current" : 5,
+                "available" : 814
+        },
+        "extra_info" : {
+                "note" : "fields vary by platform",
+                "heap_usage_bytes" : 500192,
+                "page_faults" : 458031
+        },
+        "indexCounters" : {
+                "btree" : {
+                        "accesses" : 659384,
+                        "hits" : 658571,
+                        "misses" : 813,
+                        "resets" : 0,
+                        "missRatio" : 0.0012329689528408332             // 索引没有被命中的比例
+                }
+        },
+        "backgroundFlushing" : {                                        // 后台flush到硬盘
+                "flushes" : 33732,                                      // flush的总次数
+                "total_ms" : 4022901,                                   // 总时间
+                "average_ms" : 119.26067235859125,
+                "last_ms" : 55,
+                "last_finished" : ISODate("2012-02-22T11:27:36.657Z")
+        },
+        "cursors" : {
+                "totalOpen" : 1,
+                "clientCursors_size" : 1,
+                "timedOut" : 63
+        },
+        "network" : {
+                "bytesIn" : 1676010216,
+                "bytesOut" : 5756613394,
+                "numRequests" : 6843494
+        },
+        "repl" : {
+                "ismaster" : true
+        },
+        "opcounters" : {                                                // 操作数
+                "insert" : 24,
+                "query" : 2327449,
+                "update" : 2202709,
+                "delete" : 18596,
+                "getmore" : 1583120,
+                "command" : 1275518
+        },
+        "asserts" : {
+                "regular" : 0,
+                "warning" : 0,
+                "msg" : 0,
+                "user" : 946126,
+                "rollovers" : 0
+        },
+        "writeBacksQueued" : false,
+        "dur" : {
+                "commits" : 29,
+                "journaledMB" : 0.008192,
+                "writeToDataFilesMB" : 0.00031,
+                "compression" : 0.9998779445868424,
+                "commitsInWriteLock" : 0,
+                "earlyCommits" : 0,
+                "timeMs" : {
+                        "dt" : 3051,
+                        "prepLogBuffer" : 0,
+                        "writeToJournal" : 7,
+                        "writeToDataFiles" : 0,
+                        "remapPrivateView" : 0
+                }
+        },
+        "ok" : 1
+}
+
+db.ST37014.stats()
+{
+        "ns" : "dzhST0.ST37014",
+        "count" : 2249844,                              // document数
+        "size" : 2159485848,                            // collection大小
+        "avgObjSize" : 959.8380367705495,               // size / count
+        "storageSize" : 2278039552,                     // 实际使用磁盘空间大小
+        "numExtents" : 27,
+        "nindexes" : 7,                                 // 索引个数
+        "lastExtentSize" : 386228224,
+        "paddingFactor" : 1.0099999999954288,
+        "flags" : 1,
+        "totalIndexSize" : 3158478736,                  // 索引大小
+        "indexSizes" : {
+                "_id_" : 126122976,
+                "C1_1_C2_1" : 134961232,
+                "C28_1" : 426075888,
+                "C16_-1_C8_1" : 104742736,
+                "C20_1" : 45352272,
+                "C3Token_1" : 2226332976,
+                "C6_-1_C16_-1" : 94890656
+        },
+        "ok" : 1
+}
+
+
+【监控】MongoDB的监控首选: mongostat
+
+mongostat实在是太有用了，如果DB出现了异常，我第一反应就是查看mongostat。
+如果是运维的话，喝着咖啡，看着mongostat，生活真是惬意啊。
+
+运行很简单，./mongostat --host 10.7.3.97  --port 20000 
+
+主要详细说明一下各列的意义(也可以参考./mongostat --help)
+
+insert:     一秒内的插入数
+query :     一秒内的查询数
+update:     一秒内的更新数
+delete:     一秒内的删除数
+  10条简单的查询可能比一条复杂的查询速度还快, 所以数值的大小，意义并不大。
+  但至少可以知道，现在是否在处理查询，是否在插入。
+  如果是slave，数值前往往有一个*, 代表是replicate操作
+
+getmore:    查询时游标(cursor)的getmore操作
+  用处不大
+  
+command:    一秒内执行的命令数
+  比如批量插入，只认为是一条命令。 意义不大。
+  如果是slave，会显示两个值, local|replicated，通过这两个数值的比较，或许可以看出点问题。
+  
+flushes:    一秒内flush的次数 
+  一般都是0，或者1，通过计算两个1之间的间隔时间，可以大致了解多长时间flush一次。
+  flush开销是很大的，如果频繁的flush，可能就要找找原因了。
+    
+mapped:     
+vsize:
+res:
+  这个和你用top看到的一样，mapped, vsize一般不会有大的变动， res会慢慢的上升，如果res经常突然下降，去查查是否有别的程序狂吃内存。
+  
+faults:
+  别被这个名字吓着，大压力下这个数值往往不为0。如果经常不为0，那就该加内存了。
+  
+locked:
+  MongoDB就一把读写锁，这里指的是写锁所住的时间百分比。这个数值过大(经常超过10%)，那就是出状况了。
+  
+idx miss:
+  非常重要的参数, 正常情况下，所有的查询都应该通过索引，也就是idx miss为0。如果这里数值较大，是不是缺少索引。
+  
+qr|qw: queue lengths for clients waiting (read|write)
+ar|aw: active clients (read|write)
+  如果这两个数值很大，那么就是DB被堵住了，DB的处理速度不及请求速度。
+  看看是否有开销很大的慢查询。如果查询一切正常，确实是负载很大，就需要加机器了。
+  
+netIn: network traffic in - bits
+netOut: network traffic out - bits
+  网络带宽压力，一般MongoDB，网络不会成为瓶颈
+
+conn: number of open connections
+  MongoDB为每一个连接创建一个线程，线程的创建和释放也是有开销的。尽量不要让这个数值很大。
+ 
+repl: 服务器当前状态
+    M   - master
+    SEC - secondary
+    REC - recovering
+    UNK - unknown
+    SLV - slave
+    
+time: 当前时间
+

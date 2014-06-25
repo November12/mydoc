@@ -1,0 +1,51 @@
+1. RPC介绍
+
+  Remote Procedure Call Protocol - 远程过程调用协议
+
+  它是一种通过网络从远程计算机程序上请求服务，而不需要了解底层网络技术的协议。
+  
+  RPC需要借助内核完成，把网络技术交予内核。
+  
+  RPC采用客户机/服务器模式。由客户机发起请求，服务器进行处理，并应答。
+  
+  
+2. 确定一个远程调用
+  
+  一个远程过程是有三个要素来唯一确定的：程序号、版本号和过程号。
+    程序号: 区分不同的程序。
+    版本号：识别相同程序的不同版本。
+    过程号: 也就是函数(过程)标识。
+    
+    
+3. 协议结构
+  为方便跨平台的远程过程调用，必须要标准化RPC协议。有多种RPC的模型与实现。ISO/IEC中也定义了RPC。
+  RPC协议由两独立部分组成：调用信息和答复信息。
+
+  
+4. RPC和RMI的简单比较
+  
+  
+  
+  
+  
+附一: linux RPC 编程
+  Linux下面的RPC模型是SUN RPC(ONC RPC), 需要使用到rpcgen
+  1.写一个rpc程序，也就是idl
+    如 test.x
+  2.使用rpcgen生成必须的文件，通常是客户端和服务器端以及头文件
+    $rpcgen test.x
+  3.使用rpcgen生成服务器端和客户端的C语言代码
+    $rpcgen -Ss -o test_server.c test.x
+    $rpcgen -Sc -o test_client.c test.x
+  4.生成Makefile
+    $rpcgen -Sm test.x>Makefile
+  5.编辑源文件，加入你想要的服务等
+  6.编辑Makefile,这很重要！
+  7.执行测试
+
+
+3RPC和RMI的简单比较
+
+  
+  
+  

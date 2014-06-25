@@ -1,0 +1,80 @@
+  关键字: 水平划分(区域)、垂直划分(列族)、KV存储
+
+1. HBase介绍
+  HBase实质是KV存储(按格式优化)
+
+  传统的RDBMS都是运行在单个节点上的，虽然有一些复制和分区的策略，但是牺牲极大，甚至无法支持很多特性。
+  HBase从另一个方向来解决可伸缩性的问题。
+  
+  HDFS和MapReduce面对的是大数据、批处理。对于读写单独的记录，效率非常低下。
+  而HBase就是用来填补这之间的差异。(换而言之，如果大数据，我们可以用MR; 如果更新频繁，我们可以用RDBMS; 那么即大数据，又更新频繁呢?)
+  
+  
+2. 数据结构
+  表
+    区域                      集群分布数据的最小单位(有点RDBMS中水平分区的意思), 区域(表，第一行，最后一行)
+      行
+        列族                  调优和存储的最小单位
+          列                  也就是"单元格", 单元格是有版本概念的
+  
+  需要注意的是，对行的更新都是原子的
+
+
+3. HBase的架构
+  HBase也是尽量遵循Hadoop模型的(甚至直接继承Hadoop的实现)
+  HBase的节点分为master 和 Regionsever (和hadoop、HDFS的完全一样，不再复述)
+  
+  客户端每次行操作可能需要访问三次:
+    1.客户端访问zookeeper, 查找-ROOT-表的位置。
+    2.客户端访问-ROOT-表，查找.META位置。(-ROOT-表包含.META.表的区域列表)
+    3.客户端访问.META.表, 查找数据所在的区域信息。(.META.中每行即一条区域信息, 可以看做一个索引)
+    4.客户端访问Regionserver，获取需要的数据。
+    注: 客户端会有缓存机制，不必每次访问都需要以上步骤。
+  
+  到达Regionserver的写操作:
+    1.首先追加到"commit log"
+    2.然后加入内存中的memstore
+    3.当memstore满后, 会触发flush机制持久化到磁盘。并且多个flush的文件最终会被合并压缩
+    这种log->mem->disk的做法在NoSQL里面非常普遍
+    
+    
+4. 客户端
+  和HBase交互的方法, 和Hadoop类似，主要有
+    Java API(最常用的交互方式)
+    REST
+    Thrift
+    Avro
+    
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+    
+安装
+  官网hbase.apache.org/上, 下载hbase-0.94.13.tar.gz 
+  
+  tar xzf hbase-x.y.z.tar.gz
+  
+export HBASE_HOME=/home/hbase/hbase...
+export path=$path:$HBASE_HOME/bin
+
+
+  
+    
+    
+
+    
+    
+    
+
+  

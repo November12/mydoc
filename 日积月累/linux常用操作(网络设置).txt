@@ -1,0 +1,20 @@
+1. 设置网卡
+/etc/sysconfig/network-script/ifcfg-eth0 
+TYPE=Ethernet       		  #网卡类型
+DEVICE=eth0               #网卡接口名称
+ONBOOT=yes                #系统启动时是否自动加载
+BOOTPROTO=static          #启用地址协议 --static:静态协议 --bootp协议 --dhcp协议
+IPADDR=192.168.1.11       #网卡IP地址
+NETMASK=255.255.255.0     #网卡网络地址
+GATEWAY=192.168.1.1       #网卡网关地址
+DNS1=10.203.104.41        #网卡DNS地址
+HWADDR=00:0C:29:13:5D:74  #网卡设备MAC地址
+BROADCAST=192.168.1.255   #网卡广播地址 
+
+2. 启动关闭网卡(4种方式)
+方式一: /etc/init.d/network {start|stop|restart|reload|status}
+方式二: service network {start|stop|restart|reload|status}
+方法三: ifconfig eth0 {up|down}
+方法四: {ifup|ifdown} eth0 
+
+

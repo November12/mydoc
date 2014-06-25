@@ -1,0 +1,586 @@
+☆☆☆：常用命令，掌握常用参数
+☆☆:   了解基本用法和场合
+☆:     了解命令名称
+
+
+文件管理
+* cat    3
+  参数:
+    -n: 由1开始对所有输出的行数编号
+    -v: 显示no print字符
+  用法:
+    cat -n textfile1 > textfile2
+    cat textfile1 textfile2 >> textfile3
+
+* chattr 1
+  改变文件属性，用于ext2文件系统
+
+* chgrp  2
+  变更文件或目录的所属群组，一般使用chown操作
+  
+* chmod  3
+  使用者权限设置
+  -R 包括子目录
+  
+* chown  3
+  改变档案的拥有者
+  -R 包括子目录
+
+* cksum  3
+  返回文件的CRC32值，类似于md5sum
+  
+* cmp    3
+  比较两个文件内容是否一样，不过比较差异cmp显示不详细。
+  更多的用法是 cmp -s file1 file2    # 没有输出，返回值决定是否一样
+  
+* diff   3
+  比较两个文件内容是否一样, 显示友好。
+  
+* diffstat 1
+  对diff的结果，更好的显示
+
+* file 1
+  辨识文件类型。很少用到
+  
+* find 4
+  常用格式
+    find /etc -name a.cpp         查找文件名
+    find /etc -name a.cpp         模糊查找
+    find / -name a.cpp -ls        -ls可以起到ls -a的打印效果，非常详细
+    find ... -exec rm {} \;       -exec参数必须用';'结尾, 而因为通常shell都会对';'进行处理，所以用'\;'防止这种情况。 
+                                  {} 是指把find的结果放到这个地方来
+                                  通过管道也可以实现相等的逻辑，find ... | xargs rm -rf
+
+* git 1
+  现在已经不用了
+
+* gitview  1
+  现在已经不用了
+
+* indent 3
+  格式化C语言的代码，使得代码更加整洁。
+  参数非常丰富，可以满足各种需求。
+
+* cut   3
+  按列截取内容
+  cut -c 3-6 file   # 截取每行第3个字符到第6个字符的内容
+  cut -f 2-3 file   # 截取每行第2列到第3列的内容
+
+* ln    3
+  创建一个链接
+  ln -s yy zz       # 创建一个软链接zz
+  ln yy zz          # 创建一个硬链接zz
+
+* less  3
+  非常有用的命令，less一开始并未读入整个文档，因此打开大文件时会非常快。
+  和more的区别在于，可以往回翻看。
+  
+* locate    3
+  非常好用的命令。查找文件时，明显优于find。
+  需要updatedb来建立数据库。
+
+* isattr     1
+  不常用
+  
+* lsof  3
+  在linux环境下，任何事物都以文件的形式存在，通过文件不仅仅可以访问常规数据，还可以访问网络连接和硬件。
+  lsof需要访问核心内存和各种文件, 因此必须要有root权限。
+  显示内容: 
+    COMMAND：进程名
+    PID：    进程标识符
+    USER：   进程所有者
+    FD：     文件描述符，应用程序通过文件描述符识别该文件。如cwd、txt等
+    TYPE：   文件类型，如DIR、REG等
+    DEVICE： 指定磁盘的名称
+    SIZE：   文件的大小
+    NODE：   索引节点（文件在磁盘上的标识）
+    NAME：   文件的完成路径
+  参数列表:
+    filename    显示打开指定文件的所有进程, 如lsof /lib64/ld-2.5.so, 可查看那些程序调用了此so
+    -c string   显示指定进程打开的文件
+    -u username 显示所属user进程打开的文件
+    -g gid      显示归属gid的进程情况
+    +d /DIR/    显示目录下被进程打开的文件
+    +D /DIR/    同上，但是会搜索目录下的所有目录，时间相对较长
+    lsof -d FD  显示指定文件描述符的进程
+
+   
+
+
+
+* mattrib 
+  
+
+* mc 
+* mdel
+* mdir 
+* mktemp 
+
+
+* more
+  由于有less，不常用more
+  more不能往回翻看，但好处是节省了内存
+
+* mmove
+* mread
+* mren 
+* mtools 
+* mtoolstest
+* mv
+* od
+* paste
+* patch
+* rcp 
+* rm
+* slocate
+* split
+* tee
+* tmpwatch
+* touch
+* umask 
+* which 
+* cp
+* in
+* mcopy
+* mshowfat
+* rhmask
+* whereis 
+
+磁盘管理
+cd df dirs du edquota eject 
+mcd mdeltree mdu mkdir mlabel mmd 
+mrd mzip pwd quota mount mmount 
+rmdir rmt stat tree umount ls 
+quotacheck quotaoff lndir repquota quotaon   
+
+文档编辑
+* awk   4
+  功能非常强大，还可以编程
+  语法格式:
+    awk '{pattern + action}' {filenames}
+  pattern:
+    选择查找的内容
+    
+  action:
+    对选择内容的操作
+    
+    
+  常用示例:
+    awk  '{print $1}'       # '\n'分割一条条的记录, -F指定域分割符, $0表示所有域，$1表示第一个域
+    
+    
+    
+    
+  
+
+
+
+
+
+
+col colrm comm csplit ed egrep ex fgrep 
+fmt fold 
+
+* grep    4
+  常用参数:
+    -a              不要忽略二进制的数据。
+    -A10            另外显示后10行
+    -B10            另外显示前10行
+    -C5             另外显示前5行和后5行
+    -c              统计匹配到的行数
+    -v              反转查找
+    -i              忽略字符大小写的差别
+    -r              搜索子目录, 等同于-d recurse
+    -l              只列出符合的文件名
+    -n              打印行号
+    -L              列出不符合的文件名，和-l正好相反
+    -w              只匹配整个单词，（如匹配‘magic’，而不是‘magical’）
+    -e              后面的模式是一个正则表达式
+    -E              grep的扩展模式，可以识别"与"或者|(或), 如 $ egrep '(shutdown | reboot)(s)?' *
+  常用示例:
+    grep pattern1 | pattern2 files
+                    符合pattern1或pattern2
+    grep pattern1 files | grep pattern2
+                    符合pattern1且pattern2
+  
+
+
+ ispell jed joe join look 
+mtype pico rgrep 
+
+* sed     4
+  语法格式：
+    sed [options] 'command' file(s)
+  options：
+      -n             只打印匹配的行
+      -e             允许在同一行里执行多条命令, 如 sed -e '1,5d' -e 's/test/check/', 注意: 命令的执行顺序对结果有影响
+  command：
+    选择行:
+      /^sed/         匹配所有以sed开头的行
+      /sed$/         匹配所有以sed结尾的行
+      /s.d/          匹配一个非换行符的字符
+      /*sed/         一个或多个字符
+      /[Ss]ed/       匹配一个范围内的字符, 范围描述格式还有: [A-Z]
+      [^]            匹配一个除此范围内的字符
+      \(..\)         保存匹配的字符，如s/\(love\)able/\1rs，loveable被替换成lovers
+      &              保存真个搜索字符，如s/love/**&**/，love这成**love**
+      \<             锚定单词的开始，如:/\<love/匹配包含以love开头的单词的行
+      \>             锚定单词的结束，如/love\>/匹配包含以love结尾的单词的行
+      \{m\}          重复m次
+      \{m,\}         重复至少m次   
+      \{m,n\}        重复至少m次，不多于n次
+    操作行:
+      d              删除行
+      p              打印行, 通常和-n一起使用
+    操作行:(不常用)
+      a\            在当前行后面加入一行文本
+      c\            用新的文本改变本行的文本
+      D             删除查找到的第一行   
+      i\            在当前行上面插入文本
+      h             拷贝模板块的内容到内存中的缓冲区
+      H             追加模板块的内容到内存中的缓冲区   
+      g             获得内存缓冲区的内容，并替代当前模板块中的文本
+      G             获得内存缓冲区的内容，并追加到当前模板块文本的后面
+      l             列表不能打印字符的清单
+      n             读取下一个输入行，用下一个命令处理新的行而不是用第一个命令
+      N             追加下一个输入行到模板块后面并在二者间嵌入一个新行，改变当前行号码
+      P             打印模板块的第一行
+      q             退出Sed
+      r file        从file中读行
+      b lable       分支到脚本中带有标记的地方，如果分支不存在则分支到脚本的末尾
+      t label       if分支，从最后一行开始，条件一旦满足或者T，t命令，将导致分支到带有标号的命令处，或者到脚本的末尾
+      T label       错误分支，从最后一行开始，一旦发生错误或者T，t命令，将导致分支到带有标号的命令处，或者到脚本的末尾
+      w file        写并追加模板块到file末尾
+      W file        写并追加模板块的第一行到file末尾
+      !             表示后面的命令对所有没有被选定的行发生作用
+      s/re/string   用string替换正则表达式re
+      =             打印当前行号码
+      #             把注释扩展到下一个换行符以前
+      g             表示行内全面替换。   
+      y             表示把一个字符翻译为另外的字符（但是不用于正则表达式）   
+  常用实例:
+    $ sed '2d' example              删除example文件的第二行
+    $ sed '2,$d' example            删除example文件的第二行到末尾所有行
+    $ sed '$d' example              删除example文件的最后一行
+    $ sed '/test/'d example         删除example文件所有包含test的行
+    $ sed 's/test/mytest/g'         把test替换为mytest
+    $ sed -n 's/^test/mytest/p'     -n选项和p标志一起使用表示只打印那些发生替换的行
+    $ sed 's/^192.168.0.1/&localhost/'  变成192.168.0.1localhost。   
+    $ sed -n 's/\(love\)able/\1rs/p'    所有loveable会被替换成lovers
+    $ sed 's#10#100#g' example          不论什么字符，紧跟着s命令的都被认为是新的分隔符
+    $ sed -n '/test/,/check/p'          所有在模板test和check所确定的范围内的行都被打印。   
+    $ sed -n '5,/^test/p'               打印从第五行开始到第一个包含以test开始的行之间的所有行。   
+    $ sed '/test/,/check/s/$/sed test/' 对于模板test和west之间的行，每行的末尾用字符串sed test替换。   
+    $ sed '/test/r file' example        file里的内容被读进来，显示在与test匹配的行后面，如果匹配多行，则file的内容将显示在所有匹配行的下面。   
+    $ sed -n '/test/w file' example     在example中所有包含test的行都被写入file里。   
+    $ sed '/^test/a\\--->this is a example' example     'this is a example'被追加到以test开头的行后面，sed要求命令a后面有一个反斜杠
+    $ sed '/test/i\\   new line   -------------------------' example   
+                                        如果test被匹配，则把反斜杠后面的文本插入到匹配行的前面。   
+    $ sed '/test/{ n; s/aa/bb/; }' example
+                                    如果test被匹配，则移动到匹配行的下一行，替换这一行的aa，变为bb，并打印该行，然后继续。   
+    $ sed '1,10y/abcde/ABCDE/' example
+                                    把1--10行内所有abcde转变为大写，注意，正则表达式元字符不能使用这个命令。   
+    $ sed '10q' example             打印完第10行后，退出sed
+    $ sed -e '/test/h' -e '$G example
+                                    在sed处理文件的时候，每一行都被保存在一个叫模式空间的临时缓冲区中，除非行被删除或者输出被取消，否则所有被处理的行都将打印在屏幕上。接着模式空间被清空，并存入新的一行等待处理。在这个例子里，匹配test的行被找到后，将存入模式空间，h命令将其复制并存入一个称为保 持缓存区的特殊缓冲区内。第二条语句的意思是，当到达最后一行后，G命令取出保持缓冲区的行，然后把它放回模式空间中，且追加到现在已经存在于模式空间中 的行的末尾。在这个例子中就是追加到最后一行。简单来说，任何包含test的行都被复制并追加到该文件的末尾。
+
+
+
+ sort spell tr expr 
+uniq wc       
+
+文件传输 　 
+lprm lpr lpq lpd bye ftp 
+uuto uupick uucp uucico tftp ncftp 
+ftpshut ftpwho ftpcount       
+
+磁盘维护　 
+badblocks cfdisk dd e2fsck ext2ed 
+fsck fsck fsconf fdformat hdparm 
+mformat mkbootdisk mkdosfs mke2fs mkfs.ext2 
+mkfs.msdos mkinitrd mkisofts mkswap mpartition 
+swapon symlinks sync mbadblocks mkfs 
+fsck.ext2 fdisk losetup mkfs sfdisk 
+swapoff     
+
+网络通讯
+ 
+
+* arpwatch 
+
+
+* dip
+
+
+* getty
+
+
+* mingetty
+
+
+* uux 
+
+
+* telnet    3
+  登陆远端主机
+  
+
+* uulog
+
+* uustat
+
+* ppp-off
+
+* nc 
+
+* httpd     1
+  Apache HTTP服务器程序
+  估计没有谁会用这种方式启动http服务
+  
+* ifconfig    4
+  可以查询，也可以设置网卡和ip参数。
+  常用示例
+    ifconfig eth0             # 查看网卡eth0的信息
+    ifconfig eth0 192.168.100.100 netmask 255.255.255.128 mtu 8000 
+                              # 修改网卡ip，注意: 这只是修改了内存中的信息，重启后将回到原先配置
+    ifconfig eth0:0 192.168.50.50
+                              # 设置多个IP
+    ifconfig eth0:0 down      # 关闭eth0:0, 别名也是可以单独关闭的哦
+    ifconfig eth1 up          # 启动eth1
+    
+* ifup、ifdown     4
+  两个Script, 可以启动关闭网卡
+  这两个命令操作的是配置文件的信息。对ifconfig修改的配置不感冒。
+  配置文件位置在 /etc/sysconfig/network-scripts/ifcfg-ethx
+  ifup eth0
+  ifdown eth0:0
+  
+* route     4
+  要实现两个不同的子网之间的通信，需要同时位于两个网络的网关来实现。(通常用路由器来做网关)
+  需要注意的是, route命令添加的路由，重启后就没了，在linux下设置永久路由的方法：
+    1.在/etc/rc.local里添加
+    2.在/etc/sysconfig/network里添加到末尾
+    3./etc/sysconfig/static-router: any net x.x.x.x/24 gw y.y.y.y
+
+  常用参数:
+    -n                  IP/端口不使用别名
+   用于add|del的参数
+    -net                到网段的路由
+    -host               到主机的路由
+    netmask             和网段参数有关
+    gw                  走哪个网关
+    dev eth0            走那张网卡
+  返回列的意义:
+     Flags：            U (route is up)：该路由是启动的
+                        H (target is a host)：目标是一部主机 (IP) 而非网域
+                        G (use gateway)：需要透过外部的主机 (gateway) 来转递封包
+                        R (reinstate route for dynamic routing)：使用动态路由时，恢复路由资讯的旗标
+                        D (dynamically installed by daemon or redirect)：已经由服务或转 port 功能设定为动态路由
+                        M (modified from routing daemon or redirect)：路由已经被修改了
+                        o (reject route)：这个路由将不会被接受(用来抵挡不安全的网域！)
+  常用示例:
+    route                     # 等同于netstat -r
+    route add -net 192.168.20.0 netmask 255.255.255.0 gw 192.168.10.1
+                              # 我想访问192.168.20.0这个网段, 我该走网关192.168.10.1(255.255.255.0)
+    route del -net 192.168.20.0 netmask 255.255.255.0
+                              # 删除路由192.168.20.0
+
+* tracert     1     
+  和traceroute意义一样，不同的是tracert使用ICMP Echo Request报文去实现
+  traceroute -I, 等同于tracert
+
+
+* minicom 
+
+* mesg 
+
+* dnsconf 
+
+* wall 
+
+
+* netstat 4
+显示, 分为两部分:
+  Active Internet connections
+    Proto     连接使用的协议
+    Recv-Q    接收队列, 一般为0，否则网络接收有堆积
+    Send-Q    发送队列，一般为0，否则网络接收有堆积
+  Active UNIX domain sockets
+    ...
+    
+常用参数:
+  -a: 显示所有，默认不显示LISTEN
+  -t: 仅显示tcp相关选项
+  -u: 仅显示udp相关选项
+  -n: 端口显示数字, 一般都会带上
+  -l: 仅列出Listen
+
+  -p 显示建立相关链接的程序名
+  -r 显示路由信息，路由表
+  -s 显示各种统计信息
+  -c 定时刷新结果
+
+  
+实用命令:
+  netstat -nat | grep "192.168.1.15:22" |awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -nr|head -20   # 统计连接22端口所有的ip
+  netstat -nat |awk '{print $6}'|sort|uniq -c   # 统计当前连接所处状态的数量
+  
+
+* ping      4
+  ping检测主机网络接口状态，使用的是ICMP协议
+  常用参数:
+    -c：设置完成要求回应的次数
+    -f：极限检测, 对于测试连通性非常有帮助
+    -i：指定收发信息的间隔秒数
+    -R：记录路由过程, 需要中间主机的配合，最多记录9个地址。很有意思的命令
+    -s：设置数据包的大小
+    -t：设置存活数值TTL的大小, 可以发现到目标机跳了多少跳
+  常用示例:
+    ping 10.15.107.155 -f -c100               # 快速发100次，查看连通性如何
+    ping 10.15.107.155 -R                     # 打印包的路由信息
+    ping 10.15.107.155 -s65507                # 包总长度为65536
+    ping 10.15.107.155 -t10                   # 10跳之内是否能返回数据
+  
+
+ 
+* traceroute      4
+  检查网络路径的工具, 通过设置IP报文里的TTL字段，TTL在每个路由器里都会减1，
+  当TTL减到0还没有到达目的地，那么路由器会返回一个类型11的ICMP报文, 通过这个ICMP报文就能知道每一跳的IP地址
+  
+  
+  常用参数:
+    -I                traceroute使用UDP报文实现, -I使用ICMP Echo Request报文去实现 (有些路由器屏蔽了检查路径的方式, 因此可以结合两种方式实现)
+    -T                使用TCP SYN
+    -U                使用UDP(默认)
+    -f10              从TTL=10开始测试起
+    -m20              TTL=20时停止
+    -ieth0            指定网卡送出数据包
+    -n                不使用别名
+    -p                设置通信端口, 对付防火墙的
+    -w30              设置等待远端主机回报的时间
+
+* nslookup      3
+  通过域名查询IP
+  ping命令也可以完成查询的工作，但只能查询到一个
+  nslookup可以查询全所有的ip
+  常用示例:
+    nslookup www.baidu.com          # Non-authoritative answer: 之前的是查询方信息，之后是被查询方(baidu)的信息
+  
+
+
+
+
+
+
+
+
+* tty     3
+  打印当前终端名
+  tty介绍
+    TTY是TeleTYpe的缩写, TeleTYpe是电传打字机的意思
+    早期的电脑，只能以批处理方式运行，而指令的输入只能靠穿孔卡片，因此，TeleTYpe是当时唯一的输入设备
+  常用操作:
+    tty               # 结果类似 /dev/pts/23， 执行echo "hello" > /dev/pts/23 试试 :)
+
+
+
+* newaliases      1
+  与mail相关的命令，相信没有谁会使用
+
+
+* write    2
+  发送数据到某终端, 和echo "hello" > tty相比，进入write模式后，可以一直发送。
+  格式:
+    write user [ttyname]        # 如果用户开了多个tty，最好填一下tty
+  
+* tcpdump     4
+  
+      
+      
+ 
+系统管理 
+adduser chfn useradd date exit 
+
+* finger      2
+  Finger是一个协议，用于获取某机器上用户的登录信息
+  如果要获取远程机器的信息，需要机器开着finger服务(因此，有很大的局限性)
+  -s显示内容:
+    以tty为单位显示，因此一个用户会有多行记录
+    Login             # 登录账号
+    Name              # 实际姓名(一般为空)
+    Tty               # 终端号
+    Idle              # 空闲时间
+    Login Time        # 登录时间
+    Office            # 一般为空
+    Office Phone      # 一般为空
+  -l显示效果:
+    以用户为单位打印, 显示更详细，如用户主目录等
+    个人更喜欢这种方式
+  常用示例:
+    finger                            # 显示本机所有用户信息
+    finger -l hujj                    # 显示hujj用户的信息
+    finger -l hujj@10.15.107.155      # 显示155机器hujj的信息
+    
+
+
+fwhois sleep suspend  groupdel groupmod halt 
+kill last lastb login logname logout 
+ps  nice procinfo top 
+
+
+
+* pstree 
+
+
+reboot 
+rlogin rsh sliplogin  screen shutdown rwho  
+sudo gitps  swatch tload logrotate  kill 
+uname chsh userconf 
+
+* userdel     3
+  删除某个用户
+  userdel -r test1      # 删除用户test1
+
+ usermod vlock 
+who whoami whois newgrp renice su 
+skill w id free 
+
+* strace 4
+
+  
+
+
+
+
+
+
+系统设置
+reset clear alias dircolors  aumix bind 
+chroot clock crontab declare depmod dmesg 
+enable eval export pwunconv  grpconv rpm  
+insmod kbdconfig lilo liloconfig lsmod minfo 
+set  modprobe ntsysv moouseconfig passwd pwconv 
+rdate resize rmmod grpunconv  modinfo  time  
+setup sndconfig setenv setconsole timeconfig ulimit 
+unset chkconfig apmd hwclock mkkickstart fbset 
+unalias SVGAText Mode    
+ 
+备份压缩 
+ar  bunzip2  bzip2  bzip2recover  gunzip  unarj 
+compress  cpio  dump uuencode gzexe gzip 
+lha restore tar uudecode unzip zip 
+zipinfo                
+
+设备管理
+setleds loadkeys rdev dumpkeys MAKEDEV 
+ 
+ 
+ 
+补充
+wget 
+ 
+ 
+ 
+ 
+ 
+ 

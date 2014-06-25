@@ -1,0 +1,14 @@
+1. 在官网上下载最新的代码
+http://www.mongodb.org/
+
+2. 安装前准备
+scons
+Python(version >= 2.5)
+boost
+
+3. 安装
+scons --prefix=/opt/mongo2.2.0 install
+
+
+
+

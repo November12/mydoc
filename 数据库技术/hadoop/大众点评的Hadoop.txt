@@ -1,0 +1,59 @@
+任务调度:
+  Apache Ozzie: 问题是只支持Hadoop/Hive的调度，不支持第三方程序的调度
+  
+数据导入:
+  结构化:
+    Apache Sqoop: 
+    淘宝DataX:
+  非结构化:
+    Flume
+  
+Web Hive:
+  更方便的使用Hive
+  
+安全性:
+  KDC
+  Keytab File
+  
+HBase:
+  读性能
+  
+HCatalog
+
+Ambari
+  配置、管理和监视
+
+
+Apache Mesos
+  主页: http://www.mesosproject.org/index.html
+  介绍:
+    一个资源分配系统，其他计算框架在此系统下进行作业。
+    采用两层调度，先由master调度framework，再由framework调度计算框架。
+    框架存在中心节点。为此，采用zookeeper来解决这个问题。
+
+  Apache Mesos由四个组件组成, 
+    Mesos-master: 管理slave和framework，并将slave上的资源以某种方式分配给framework
+    mesos-slave:  管理task，并个task分配资源。但所有的分配都由master指导
+    framework:    各种外部的计算框架，如hadoop。为了适应Mesos的调度，计算框架必须有一个调度器模块与之交互。
+    executor:     启动框架内部的task。显然，不同的框架需要不同的executor来启动。
+
+Hadoop YARN
+  号称MapReduceV2，顾名思义，是用来取代MapReduce的。
+  MapReduce的问题:
+    JobTracker存在单点故障
+    JobTracker负责所有的Job，会成为瓶颈。业界公认的是上限4000节点。
+    TaskTracker没有CPU/内存等资源分配的概念，如两个耗CPU严重的task，可能会被分配到同一台机器。
+    TaskTracker中的slot，分为map slot和reduce slot，当只有map(或reduce) task的时候，存在资源浪费。
+  基于0.23的YARN
+    将JobTracker分离为ResourceManager和NodeManager，分别管理资源和任务。(和Mesos思想一样)
+    
+Hadoop上的实时解决方案
+Cloudera Impala 
+  
+    
+Hadoop2
+  Hadoop2是在Hadoop1的基础上完全的重构。但从技术架构方面来看，肯定比Hadoop1要好。
+  但目前稳定的大型Hadoop集群还都是运行在Hadoop1上的，Hadoop2还缺少成功案例。
+
+
+  

@@ -1,0 +1,17 @@
+0. PCRE介绍
+兼容perl的正规表达式库, 用c编写的，也通常用于C语言上。
+虽然boost也有完善的正则表达式，但是Boost太庞大了，而且也只能用于C++
+
+1. 获取源代码
+官网上面获取一份源代码, http://www.pcre.org/
+我获取的是pcre-8.31.tar.gz
+
+2. 安装
+tar -xzvf pcre-8.31.tar.gz
+./configue
+make
+make install
+
+3. 使用方法
+对于C程序，编译命令为：gcc -I/usr/local/include/pcre -L/usr/local/lib/pcre -lpcre file.c
+对于C程序，编译命令为：gcc -I/usr/local/include/pcre -L/usr/local/lib/pcre -lpcrecpp file.cpp 

@@ -1,0 +1,106 @@
+0. 安装
+# tar zvxf httpd-2.2.3.tar.gz
+# cd httpd-2.2.3
+# ./configure --prefix=/usr/local/apache \
+--enable-module=so \
+--enable-shared=max
+--enable-rewrite
+--enable-rewrite
+# make
+# make install
+
+加入启动
+vi /etc/rc.local
+/usr/local/apache/bin/apachectl start
+
+grep -v "#" /usr/local/apache/bin/apachectl > /etc/init.d/apache
+chmod +x /etc/init.d/apache
+vi /etc/init.d/apache
+#!/bin/sh
+
+chkconfig --add apache
+chkconfig --list apache
+chkconfig --level 2345 apache on
+
+
+
+1. 启动：
+	apachectl start|stop|restart
+可以如下方式检查是否启动成功
+	ps -aux | grep httpd
+	netstat -ant | grep 80
+
+
+2. 配置文件
+位置：/etc/httpd/conf/httpd.conf
+ 
+2.1 会被修改的字段:
+
+# 当客户端请求出现某些错误的时候，会将这个e-mail地址显示出来，以便客户联系管理员
+ServerAdmin root@localhost
+
+# url的根目录
+DocumentRoot "/var/www/html"
+ 
+# 默认的文档名
+DirectoryIndex index.html index.html.var 
+
+# 未知类型的MIME type, 建议修改为application/octet-stream 
+DefaultType text/plain
+
+# 当客户端请求的网页不存在时，返回的错误文档里面，可能会包含服务器名字、apache版本等信息。建议关闭此选项（On | Off | Email)
+ServerSignature On
+ 
+ 
+2.2 常用的(重要)字段:
+
+# httpd的运行路径, 配置文件里面的相对路径都是以此为根目录
+ServerRoot "/etc/httpd"					
+
+# httpd可以进行自身的复制，httpd.pid文件里面记录的是父httpd的进程号，对父httpd的操作会影响所有httpd
+PidFile run/httpd.pid
+
+# 超过此时间间隔，服务器将主动和客户端断开 (单位: 秒)
+Timeout 120
+
+# HTTP 1.0中，一次连接只能传递一个http请求，而HTTP 1.1中，打开此选项，一次连接可以传递多个http请求
+KeepAlive On
+
+# 在HTTP 1.1中，一次连接最大能传递的http请求个数，如果为0，则可以无限传输
+MaxKeepAliveRequests 100
+
+# 在HTTP 1.1中，一次请求结束后，间隔时间内没有新的请求，服务器将断开连接 (单位: 秒)
+KeepAliveTimeout 15
+
+<IfModule worker.c>
+StartServers         2		启动服务时的进程数
+MaxClients         150		最大的客户连接数
+MinSpareThreads     25		
+MaxSpareThreads     75 		
+ThreadsPerChild     25		进程的工作线程数
+MaxRequestsPerChild  0		一个子进程在完成n个连接请求后退出, 父进程会重启一个干净的子进程(以此确保系统的稳定、高效), 0为无限
+</IfModule>
+
+# 监听端口号，也可指定只监听某个ip, 如：Listen 12.34.56.78:80
+Listen 80
+
+# Apache可以通过特殊的http请求，获取自身的运行状态，开启此选项，可以报告更多信息
+ExtendedStatus on
+
+# 每个目录下都有一个此后缀名的文件，里面内容描述了目录的访问权限
+AccessFileName .htaccess
+
+# 文件的访问权限，如果这里设置了，那么将忽略目录的访问权限(下例可以保证客户无法窃取.htaccess and .htpasswd等文件)
+<Files ~ "^\.ht">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# MIME type的保存路径
+TypesConfig /etc/mime.types
+
+# 服务器只能获取客户端的ip, 通过此选项，可以通过dns反查用户的主机名，以便记录log时使用.(此功能会增加系统开销)
+HostnameLookups Off
+
+# log打印格式，末尾common是打印类型
+LogFormat "%h %l %u %t \"%r\" %>s %b" common

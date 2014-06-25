@@ -1,0 +1,20 @@
+https://github.com/
+November12
+
+关键词: git, ruby, javascript
+
+1. Github是什么
+  2008年成立，主要提供基于git的版本托管服务。
+  短短几年时间，已经有了几百万个托管项目。其中不乏Linux发明者Torvalds，Rails创始人DHH。
+  
+2. Github的由来
+  在此之前，要先说说git。
+  git和CSV/SVN这样集中式的代码管理工具不同。git强调个人开发，强调分支的创建。
+  在解决冲突上有着明显的优势，这很合乎创业团队的开发模式。
+  Github赶上了Rails和node.js两个好的机会，将ruby, javascript的项目纷纷囊入其中。
+  加之Torvalds, DHH等名人效应，以及良好的网站运作，从托管发展成了知名社区。
+  
+3. Github的优势
+  1. 贡献代码更容易。(fork和pull request)
+  2. 引入了社交的元素。(软件开发太需要沟通了)
+  3. UI做得更友好。简单易懂，易于沟通。

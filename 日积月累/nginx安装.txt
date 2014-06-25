@@ -1,0 +1,46 @@
+0. nginx介绍
+Nginx ("engine x") 是一款
+由俄罗斯的程序设计师所开发             (来源)
+高性能的，轻量级的                     (特点)
+1. HTTP Web 服务器                     (3个用途)
+2. 反向代理服务器
+3. 电子邮件 IMAP/POP3/SMTP 代理服务器
+
+1. svn上获取最新的代码
+svn co svn://svn.nginx.org/nginx/trunk nginx_install
+
+2. 安装 
+./configure 
+需要用到pcre，最好还是先安装一下pcre
+
+make 
+make install
+默认安装的路径是/usr/local/nginx
+但默认的执行程序，竟然安装到了/usr/local/nginx/sbin/nginx，也就这么用吧。
+
+3. 运行
+nginx代码少，安装的东西也少，选项也简单，真好！
+Options:
+  -t            : 测试配置文件
+  -c filename   : 设置配置文件位置(默认是conf/nginx.conf)
+  
+启动: /usr/local/nginx/sbin/nginx
+其他操作: /usr/local/nginx/sbin/nginx -s [stop|quit|reopen|reload]
+
+所有命令就这些，简单到家了 :)
+
+4. 测试
+http://192.168.1.12/
+看到页面 Welcome to nginx!
+
+
+
+
+
+
+
+
+
+
+
+

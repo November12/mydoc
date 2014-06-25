@@ -1,0 +1,65 @@
+安全认证
+集成Kerberos(TGT/TGS)
+问题: 集群上规模以后，KDC压力较大
+
+委托令牌
+块访问令牌
+
+
+用户组策略
+  组和用户的概念(多对多关系)
+  
+
+集群安全
+  非法的DataNode，不能挂接在NameNode上
+  非法的TaskTracker，不能挂接在JobTracker上
+  非法的JobTracker，不能访问DataNode
+  
+数据平台审计监控
+
+
+
+来自hadoopsphere的安全建议
+http://www.hadoopsphere.com/2013/01/security-architecture-for-apache-hadoop.html
+
+1. 基于角色的授权(Role based authorization)
+  确保职责的分离
+  限制功能性的访问
+  
+2. 管理和配置（Admin and Configuration）
+  基于角色的管理
+  可配置的节点和集群参数
+
+3. 身份认证框架（Authentication framework）
+  认证节点
+  认证客户端应用程序（为了访问集群和MapReduce任务）
+
+4. 审查日志（Audit Log）
+  日志事务
+  日志活动
+
+5. 警报（Alerts）
+  实时报警
+  持续性监测
+
+6. 文件加密（File encryption）
+  保护私有信息 (SPI/BPI)
+  遵循监管规范
+
+7. 密钥认证服务器（Key certificate Server）
+  中央密钥管理服务器管理不同文件的不同密钥 
+
+8. 网路安全（Network security）
+  确保节点之间、应用程序之间以及其他接口之间的安全通信
+
+9. 资源控制（Resource slim）
+  最低限度的网络消耗
+  最低限度的资源、线程、进程的消耗
+
+10. 通用性（Universal）
+  Hadoop未知性 – 跨分支的兼容
+  异构支持 –  跨生态系统之间的兼容
+
+
+
+

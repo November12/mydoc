@@ -1,0 +1,8 @@
+  合并之前，CouchOne公司拥有文档型数据库CouchDB, Membase公司拥有内存式数据库Membase。
+  合并之后，在Membase上，用CouchDB替换掉了持久层SQLite。但保留了memcached协议。
+  
+  所以，Couchbase是一个支持索引，支持分布式(分片)，有强盗的缓存层的文档型数据库。显然，它的对手是MongoDB
+  
+  
+  
+  

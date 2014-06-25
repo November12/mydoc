@@ -1,0 +1,42 @@
+1. 环境变量	
+	JAVA_HOME: JDK的安装路径,此路径下包括lib，bin，jre 等文件夹
+	CLASSPATH: $JAVA_HOME\bin; ，只有类在classpath 中，java 命令才能识别
+	
+2. 命令
+2.1 基本命令
+	java:  调用jvm，执行程序
+	javac: 编译器命令,类似gcc
+	jar:   归档命令,类似ar.(基于zip 和zlib 压缩格式)
+	
+2.2 RMI命令
+2.3 国际化命令
+2.4 安全控制命令
+
+3. 数据类型
+	3.1 基本数据类型(8种)
+		逻辑型: boolean
+		文本型: char
+		整型: 	byte, short, int, long
+		浮点型: double, float
+	3.2 复合数据类型(继承于Object)
+	3.3 基本类型和引用类型
+		int i;		// 基本类型
+		ClassA a;	// 引用类型(必须用new申请空间, a = b; 类似指针操作)
+
+4. 语句(用法类似c++)
+	4.1 循环语句:	while, do-while, for
+	4.2 分支语句:	if-else, switch,
+	4.3 跳转语句:	break, continue, label, return
+	4.4 异常语句:	try-catch-finally, throw
+	
+5. 集合类(java.util.*)
+	：set(集）、list(列表）、map(映射)和Queue（队列）。
+
+6. import
+	java的import和c++的include不同，import仅仅只是为了让程序更简洁，输入代码更轻松(其实完全可以不使用import)
+	
+7. javac
+	-cp, --classpath:	等同于CLASSPATH
+	-d:					编译后的文件放在哪个目录下
+
+8. ant				类似于makefile的构建工具

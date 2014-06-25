@@ -1,0 +1,16 @@
+0. 介绍
+scons是一个Python写的自动化构建工具，从构建这个角度说，它跟GNU make是同一类的工具。
+它是一种改进，并跨平台的gnu make替代工具，其集成功能类似于autoconf/automake。
+scons是一个更简便，更可靠，更高效的编译软件。
+
+优点:
+是基于Python的软件构件工具，通过Python脚本实现，可以解决各种复杂的构建问题
+跨平台
+支持多种源码管理仓库。
+
+1. 官网上下载最新代码
+http://www.scons.org/
+scons-2.2.0.tar.gz
+
+2. 安装
+执行: python setup.py install

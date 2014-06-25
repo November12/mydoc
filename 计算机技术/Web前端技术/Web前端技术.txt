@@ -1,0 +1,13 @@
+岗位名称: web前端工程师
+职    责: Web界面开发
+目    标: 改善用户体验
+
+技术范围: 
+  精通HTML/XHTML、CGI、CSS、熟悉页面架构和布局
+  熟悉Ajax、JavaScript(ActionScript)、DOM
+  了解常用的JS框架
+
+  除此之外，还需要具有一定的审美能力和基础的美工操作能力
+  
+  
+

@@ -1,0 +1,57 @@
+官网: http://www.zeromq.org/
+zguide: http://zguide.zeromq.org/
+
+1. 介绍
+  这篇文章是zeromq的开发者写的，原文在这里
+    http://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/
+  1) 传统的BSD socket，基于1:1的传输(点对点)。而zeromq可以实现N:N的传输。
+  2) 通信方式有socket, ipc, multicast等，zeromq可以隐藏这些细节。更方便使用。
+  3) zeroMQ是基于message的。显然，这要比TCP/UDP层次更高。
+  4) zeroMQ的API设计得非常好, 和socket编程风格很相似，很容易上手。
+  5) 支持的语言非常丰富，作为二进制传输，这点太重要了。
+  
+  
+2. zeromq模式:
+  1) 请求回应模式
+    可支持 N:M 的通信。同步请求回应的方式。(一个server可以相应多个请求，一个client可以请求多个servers)
+  2) 发布订阅模型
+    这是一个单向的模型。只能由发布者->订阅者，若订阅者已经连接到发布者，可以确保数据完整到达。(可靠广播的方式)
+  3) 管道模型
+    管道也是单向的，从push->poll, 可以 1:N，和发布订阅相比，数据是可靠的
+    push(负载均衡), poll(公平)
+  4) 1:1通讯
+    传统的一对一通讯。ZeroMQ不推荐的方式
+  注: 实际的应用，通常是以上模型的组合来完成，并非简单使用以上模型。
+  
+  
+
+
+
+  
+http://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/
+
+
+Zeromq模式： 
+
+http://blog.codingnow.com/2011/02/zeromq_message_patterns.html 
+
+zeromq主页： 
+
+http://www.zeromq.org/ 
+
+Zeromq Guild： 
+
+http://zguide.zeromq.org/page:all#Fixing-the-World 
+
+Zeromq 中文简介： 
+
+http://blog.csdn.net/program_think/article/details/6687076 
+
+Zero wiki: 
+
+http://en.wikipedia.org/wiki/%C3%98MQ 
+
+zeromq系列： 
+
+http://iyuan.iteye.com/blog/972949 
+

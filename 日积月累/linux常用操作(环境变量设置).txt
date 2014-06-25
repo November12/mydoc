@@ -1,0 +1,37 @@
+预备知识
+1. shell变量和环境变量
+Linux是一个多用户的操作系统。每个用户登录系统后，都会有一个专用的运行环境。这个运行环境的变量就是环境变量。
+用户登录系统后，除了这样一个专用环境以外，还会启动一个Shell，那么这个shell也有自身的变量。
+也就是说，环境变量是全局的，不管用户使用哪种shell，都一样。但shell变量则是shell专有的。
+当用户一次登录以后，只会初始化一次环境变量，但用户每次调用一个新的shell，都会初始化shell变量。
+
+举个例子说明一下:
+MAILCHECK是个shell变量:
+[hujj@localhost ~]$ MAILCHECK=59
+[hujj@localhost ~]$ set | grep MAILCHECK
+MAILCHECK=59
+[hujj@localhost ~]$ bash
+[hujj@localhost ~]$ set | grep MAILCHECK
+MAILCHECK=60
+
+HISTSIZE是一个环境变量:
+[hujj@localhost ~]$ HISTSIZE=999
+[hujj@localhost ~]$ bash
+[hujj@localhost ~]$ echo $HISTSIZE
+999
+
+2. set, env, export, declare
+set: 用来显示当前的shell变量
+env: 用来显示当前的环境变量
+export: 可以把某个shell变量升级为环境变量
+declare: 用来给变量附上属性
+  -a     变量是一个数组
+  -f     变量是函数
+  -i     变量是整型
+  -r     变量是只读
+  -x     变量是环境变量(等同于export)
+
+3. source 和 .命令
+这两种是一个意思，是从当前shell执行，而不是新起的shell执行
+可以看做是include
+执行的结果会影响当前shell

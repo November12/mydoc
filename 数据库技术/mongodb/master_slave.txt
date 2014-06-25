@@ -1,0 +1,88 @@
+【基础】MongoDB: master - slave 架构
+MongoDB的Replication架构有两种，master/slave和Replica Set。
+MongoDB力推的是Replica Set。但在这里主要想介绍的是master/slave。
+
+1. 相比Replica Set。为什么还要选择master/slave。
+对于Replication，MongoDB提出了5大优点。我们依次来看，两种架构在这些方面的表现。
+1.1 Data Redundancy(数据冗余)
+    master/slave 通过slave节点进行备份，Replica Set本身就是多节点。两者都可以很好的完成冗余备份的任务。
+    
+1.2 Automated Failover(失效备援)
+    master/slave，如果master节点宕掉了，slave无法接替写数据的任务，系统将只能提供读取服务。
+    Replica Set，如果Primary宕掉了，可以立即选举一个新的Primary。系统不受影响，可以继续提供服务。
+    显然，对于High Availability(可用性)来说，Replica Set是完胜的。
+    
+1.3 Distributing read load(读负载均衡)
+    和数据冗余一样，两者没有太大区别
+    
+1.4 Simplify maintenance(维护)
+    master/slave，如果master宕掉了，系统停止服务，等待重新启动master。如果slave宕掉了，重新启动slave，slave同步后继续提供服务。
+    Replica Set，无论什么角色，只需要重起(同步后)就可以继续提供服务。
+    Replica Set在维护上更简单。
+    
+1.5 Disaster recovery(故障恢复)
+    master/slave，如果master出故障了，重起后依然是master，无须恢复。如果slave出故障了，需要同步。
+    Replica Set，Secondary出故障了，同slave一样，通过同步解决。Primary出故障了，一般情况下，重起后变为Secondary。
+    master/slave遇到故障的时候更安全，Replica Set更智能。
+    
+从上述比较中可以看出，主要差别是在于维护方面，异常情况下，Replica Set优势还是明显的。
+
+废话一大堆，又回到了刚开始的问题，既然master/slave不如Replica Set，为什么还要用呢。
+
+因为结构简单，master永远是master，slave永远是slave。没有状态迁移，没有角色变化。
+Replica Set虽然智能，但问题也出在这里，节点的角色(状态)是会发生变化的。有时候所有节点的状态都不适合于Primary。
+碰到这种情况怎么办，系统不知道该由谁来做Primary，我们也不知道如何干预。有足够的能力搞定这些吗。
+
+如果对Replica Set没有足够的了解，对整个系统没有足够的驾驭力，在初期，使用master/slave可能会更可靠，更安全。况前，MongoDB也支持从master/slave直接升级为Replica Set。
+
+2. 配置master - slave
+也可以参考 http://www.mongodb.org/display/DOCS/Master+Slave
+我的配置是这样的
+master: 
+    bind_ip = 10.10.10.90
+    port = 12580
+    fork = true
+    master = true
+    logappend = true
+    nojournal = true
+    oplogSize = 10000
+    dbpath = ../db/
+    logpath = ../db/mongodb.log
+    directoryperdb = true
+    
+slave:
+    bind_ip = 10.10.10.91
+    port = 12580
+    fork = true
+    slave = true
+    source = 10.10.10.90:12580
+    logappend = true
+    nojournal = true
+    dbpath = ../db/
+    logpath = ../db/mongodb.log
+    directoryperdb = true
+    
+我习惯使用配置文件来启动mongod，看起来比较简洁，易于管理。
+master只多加了一行，master
+slave多加了两行, slave, source
+
+需要注意的是: 
+1. 如果在同一台机器上面配置master/slave，dbpath不能指向同一个目录。
+2. 日志默认是打开的，不需要打印日志，可以加上nojournal
+3. oplogSize往往是需要配置的，一旦slave停掉较长时间(或者因为网络原因不能同步)，需要同步的数据超过了oplogSize，那slave就起不来了。只能够从零开始，重新同步。
+
+别的和单机没什么区别了。
+
+分别启动之后，无须任何额外配置，就可以直接使用了。(简单吧)
+master上用 db.printReplicationInfo()查看状态
+slave上db.printSlaveReplicationInfo()查看状态
+
+除上述以外，slave还有一些选项可以使用:
+--only arg         仅仅同步某个(arg)database
+--slavedelay arg   防止错误操作的时候很有用，操作会延迟多少秒后才会同步到slave。如果设置了此选项，如果误操作, 比如remove了一张表，恢复还有希望
+--autoresync       自动resync，个人还是倾向于手工做这个事情。
+
+3. 使用 master - slave
+可以像单机一样去读写master, 或者去读slave             -- 站在系统内部的角度
+也可以用类似DBClientReplicaSet(C++ api)去操作         -- 站在系统外部的角度
+

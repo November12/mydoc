@@ -1,0 +1,72 @@
+  Spark是Scala语言写的，所以要先安装Java和Scala。
+  底层的调度框架是Mesos，Mesos是C++写的，所以需要glibc和gcc。
+  Mesos和Spark的衔接，需要选择恰当的版本。
+  中间任何一步错了都Spark都不能以集群方式正常运行，
+  
+1. 安装java
+  版本JDK1.6.0 u18
+  设定好JAVA_HOME
+    export JAVA_HOME=/usr/java/jdk
+    export PATH=$JAVA_HOME/bin:$PATH
+    
+2. 安装Scala
+  wget http://www.scala-lang.org/downloads/distrib/files/scala-2.9.2.tgz
+  tar xvf scala-2.9.2.tgz
+  mkdir /usr/share/scala
+  cp -r scala-2.9.2/* /usr/share/scala
+  export SCALA_HOME=/usr/share/scala
+  export PATH=$PATH:$SCALA_HOME/bin/
+  
+3. 安装Spark
+  wget -O mesos-spark-v0.5.0-0.tar.gz https://github.com/mesos/spark/tarball/v0.5.0
+  tar -xzvf mesos-spark-v0.5.0-0.tar.gz
+  mv mesos-spark-0472cf8 spark
+  cd spark
+  sbt/sbt compile
+  
+  本地模式测试: ./run spark.examples.SparkPi local
+  
+4. 安装Mesos
+  glibc 2.9（必须2.9以上）
+  gcc-c++ 4.1
+  python 2.6
+  python-devel
+  cppunit-devel
+  libtool
+  
+  wget http://people.apache.org/~benh/mesos-0.9.0-incubating-RC3/mesos-0.9.0-incubating.tar.gz
+  tar zxvf mesos-0.9.0-incubating.tar.gz
+  cd mesos-0.9.0
+  mkdir build
+  cd build
+  ../configure --with-python-headers=/usr/include/python2.6 --with-java-home=$JAVA_HOME --with-java-headers=$JAVA_HOME/include --with-webui --with-included-zookeeper --prefix=/usr/local/mesos
+  make
+  make install
+  
+  export MESOS_HOME=/usr/local/mesos
+  
+  手工模式启动：
+    启动Master: (sbin/mesos-master –log_dir=/usr/local/mesos/logs & ) &
+    启动Slave:  (sbin/mesos-slave -m 127.0.0.1:5050 –log_dir=/home/andy/mesos/logs –work_dir=/home/andy/mesos/works & ) &
+    
+5. 启动Spark On Mesos
+  export MESOS_HOME=/usr/local/mesos/
+  export MESOS_NATIVE_LIBRARY=/usr/local/mesos/lib/libmesos.so
+  export SPARK_CLASSPATH=...
+  export SCALA_HOME=/usr/share/scala
+  export SPARK_MEM=10g
+  
+  运行: ./run spark.examples.SparkPi 127.0.0.1:5050
+  
+  
+  
+  
+  
+  
+  
+
+    安装Spark
+    安装Mesos
+    启动Mesos
+    启动Spark On Mesos
+    集群部署

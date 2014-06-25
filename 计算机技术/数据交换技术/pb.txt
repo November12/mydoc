@@ -1,0 +1,35 @@
+参考资料:
+  Google Protocol Buffer 的使用和原理: http://www.ibm.com/developerworks/cn/linux/l-cn-gpb/index.html?ca=drs-
+  搜索技术博客－淘宝 玩转Protocol Buffers:  http://www.searchtb.com/2012/09/protocol-buffers.html
+1. protocol buffer介绍
+  PB是google的一种数据交换的格式，它独立于语言，独立于平台。
+  由于它是一种二进制的格式，所以肯定比xml，json等文本格式快。
+  google提供了三种语言的实现：java、c++ 和 python，每一种实现都包含了相应语言的编译器以及库文件。
+  
+  
+2. 框架模型
+  PB源码
+  PB基础库
+  Message抽象层
+  Descriptor抽象层
+  IO子系统
+  PB编译器
+  * 从PB的模型中可以看到，最上一层是源码，最下一层是编译器，网络问题并未涉及。
+
+
+3. PB编程
+  1. 编写.proto文件, 也就是idl。            vi  -> .proto
+  2. 编译.proto文件，生成目标语言文件。  .proto -> .h .cc
+  3. 编写Writer和Reader
+  * 详见附一和附二。
+
+
+4. 动态编译
+  如果事先写好.proto，数据结构在运行之前，就已经约定好了。
+  除此之外，PB可以做到动态编译。
+
+  
+总结:
+  PB主要做的工作是编码，序列化和反序列化，并不涉及到网络部分，是一个很轻量级的模型。
+  要说PB有什么优点，那就是编码部分做得好，加包-解包速度快，压缩后数据量小。
+  

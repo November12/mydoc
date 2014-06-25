@@ -1,0 +1,112 @@
+1. Squid简介
+  作为代理，一般都是透明提供服务的，对于访问者来说，是感受不到的。
+  作用: 
+    1. 代理访问，隐藏真实服务器的ip和拓扑结构
+    2. 缓存下载的数据，提供给其他人。加快访问速度，减少网络带宽
+    
+  硬件要求:
+    内存大: 可以缓存更多的数据
+    硬盘快: 作用同内存，提高访问速度
+    
+2. 安装
+  1. 在官网http://www.squid-cache.org下载源代码
+  tar -xzvf squid-3.3.8.tar.gz 
+  cd squid-3.3.8
+  ./configure       # configure选项见'附一'
+  make
+  make install 
+  
+  默认安装在/usr/local/squid目录
+  # cd /usr/local/squid
+  # ls -1
+    bin           # squidclient, purge
+    etc           # Squid唯一的配置文件squid.conf
+    include
+    lib
+    libexec
+    sbin          # Squid程序本身
+    share
+    var
+
+    /bin          # Squid程序本身，以及以及其他一些工具
+    /cache        # 缓存数据的目录, 如/00, /01, 还有诸多的子目录
+    /etc          # Squid唯一的配置文件squid.conf
+    /logs/        # Squid的日志
+    /src（自己创建的） 
+    
+
+3. squid.conf
+  常用配置:
+    # 代理端口一般都设置为80，这样就感受不到代理的存在
+    # accel为加速模式, 可酌情选择是否加上
+    # vhost必须要加.否则将无法将主机头转发至后端服务器,访问时就会出现无法找到主机头的错误此处就为加入到CDN服务的网站起加速作用
+    http_port 80 accel vhost vport allow-direct
+
+    # 缓存的位置、大小，其中缓存最大为100M；16和256代表一级和二级目录数。
+    cache_dir /usr/local/squid/cache 100 16 256
+    
+  其它配置:
+    # ACL访问控制列表, 控制进出的，无需解释
+    acl [localnet] [src] [10.0.0.0/8]         
+
+    # 和ACL配合使用
+    http_access [deny] [!Safe_ports]          
+    
+    # 原始服务器能使用头部控制过期时间。在没有明确的时候，可以通过refresh_pattern设置
+    # min 过期的最低时限
+    # max 存活的最高时限
+    refresh_pattern [-i] regexp min percent max [options]
+
+    # Squid出core的时候，core文件保存的位置
+    coredump_dir /usr/local/squid/var/cache/squid
+                      
+4. 运行Squid
+  # squid -z            该命令会产生Squid所有的缓存目录。 
+  # squid -NCd1         前台执行Squid, 该命令正式启动Squid。如果一切正常，你会看到一行输出 Ready to serve requests. 
+  # squid               后台运行Squid
+  # squid -k check      观察Squid是否正常运行
+
+
+
+
+
+
+
+
+
+    
+附一: Configure选项 
+  参考选项:
+    ./configure --enable-kill-parent-hack --enable-large-cache-files --with-large-files --with-maxfd=344800 --enable-snmp --disable-ident-lookups --enable-carp --enable-async-io=160 --enable-storeio=ufs,aufs,diskd,null,coss --enable-epoll --enable-linux-netfilter --enable-stacktraces --enable-forward-log --enable-referer-log --enable-useragent-log --enable-delay-pools --enable-follow-x-forwarded-for --enable-forw-via-db --enable-default-err-language=Simplify_Chinese --enable-err-languages="Simplify_Chinese English" --without-system-md5 --disable-internal-dns --prefix=/squidmake
+    ./configure --enable-linux-netfilter --enable-stacktraces --enable-forward-log --enable-referer-log --enable-useragent-log --enable-delay-pools --enable-follow-x-forwarded-for --enable-forw-via-db --enable-default-err-language=Simplify_Chinese --enable-err-languages="Simplify_Chinese English" --without-system-md5 --disable-internal-dns --prefix=/squidmake
+
+  --prefix=/squid             # *这里为squid的安装目录 
+  --enable-kill-parent-hack   # *关掉squid进程时连同父进程也一起关掉（enable表示开启此项功能，disable则表示关闭） 
+  --enable-large-cache-files  # *支持大的缓存文件 
+  --with-large-files          # *支持大的文件 
+  --with-maxfd=344800         # *覆盖的最大数量的fd
+  --enable-snmp               # *简单网络管理协议(SNMP)是监视网络设备和服务器的流行方法。该选项导致编译过程去编译所有的SNMP相关的代码，包括一个裁切版本的CMU SNMP库 
+  --disable-ident-lookups     # *ident是一个简单的协议允许服务器利用客户端的特殊TCP连接来发现用户 
+  --enable-carp               # *Cache数组路由协议(CARP)用来转发丢失的cache到父cache的数组或cluster 
+  --enable-async-io=160       # 同步I/O是squid技术之一，用以提升存储性能。aufs模块使用大量的线程来执行磁盘I/O操作。该代码仅仅工作在linux和solaris系统中。=N_THREADS参数改变squid使用的线程数量 此处Io是有瓶颈限制的 
+  --enable-storeio=ufs,aufs,diskd,null,coss  # Squid支持大量的不同存储模块。通过使用该选项，你告诉squid编译时使用哪个模块 
+  --enable-epoll              # 支持epoll的IO模式,2.6以上内核才具有 
+  --enable-linux-netfilter    # netfilter是linux内核的包过滤器的名字 
+  --enable-stacktraces        # 某些系统支持在程序崩溃时，自动产生数据追踪。当你激活该功能后，如果squid崩溃，数据追踪信息被写到cache.log文件。这些信息对开发和程序bug调试有用 
+  --enable-forward-log        # 支持实验forward-log指令 
+  --enable-referer-log        # 该选项激活来自客户请求的HTTP referer日志 
+  --enable-useragent-log      # 该选项激活来自客户请求的HTTP用户代理头的日志 
+  --enable-delay-pools        # 延时池是squid用于传输形状或带宽限制的技术。该池由大量的客户端IP地址组成。当来自这些客户端的请求处于cache丢失状态，他们的响应可能被人工延迟 
+  --enable-follow-x-forwarded-for  # 当一个请求被另一些代理服务器转发时通过从http头中寻找X-Forwarded-For来发现直接或间接的客户端的IP地址 
+  --enable-forw-via-db        # 支持forw/via数据库 
+  --enable-default-err-language=Simplify_Chinese    # 该选项设置error_directory指令的默认值 
+  --enable-err-languages="Simplify_Chinese English" # squid支持定制错误消息，错误消息可以用多种语言报告。该选项指定复制到安装目录($prefix/share/errors)的语言 
+  --without-system-md5        # 不使用md5加密算法 
+  --disable-internal-dns      # squid源代码包含两个不同的DNS解决方案，叫做“内部的”和“外部的”。内部查询是默认的，但某些人可能要使用外部技术。该选项禁止内部功能，转向使用旧的方式 
+
+
+    
+log日志有哪些
+
+
+

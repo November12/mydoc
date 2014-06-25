@@ -1,0 +1,152 @@
+1. redis介绍
+  redis的目标是为了取代memcached，事实上它做到了。相比memcached，主要特性有:
+    1) value的长度没有了限制。memcached的value长度是1MB。
+    2) value有更丰富的数据结构，memcached只有string。
+    3) 可以持久化保存，当然这也是双刃剑，不建议使用。
+    4) 纯文本协议, 和memcached一样
+    5) 自己写的epoll模型，效率很高
+    6) 实现了master-slave复制
+    7) 单线程IO复用
+    8) 单机上可以走unixsocket协议，传输速度更快
+  
+  和memcached相比，也有一些遗憾
+    1. 没有了批量get
+
+
+2. redis程序
+  redis-server：   Redis服务器的daemon启动程序 
+  redis-cli：      Redis命令行操作工具。当然，你也可以用telnet根据其纯文本协议来操作 
+  redis-benchmark：Redis性能测试工具，测试Redis在你的系统及你的配置下的读写性能 
+  redis-stat：     Redis状态检测工具，可以检测Redis当前状态参数及延迟状况 
+
+
+3. 数据结构
+  strings：        二进制的value
+  hashes:        
+  lists:         
+  sets:            集合，可以多个集合求交并差
+  sorted sets:     set基础上加上了排序
+
+
+4. Redis 内存存储总体结构
+  4.1 Redis可以有多个Db, 每个Db是一个redisDb结构
+    struct redisDb
+    {
+      dict *dict;             /* The keyspace for this DB */
+      dict *expires;          /* Timeout of keys with a timeout set */
+      dict *blocking_keys;    /* Keys with clients waiting for data (BLPOP) */
+      dict *io_keys;          /* Keys with clients waiting for VM I/O */
+      dict *watched_keys;     /* WATCHED keys for MULTI/EXEC CAS */
+      int id;
+    };
+
+  4.2 dict成员是与实际存储数据相关的
+    struct dict
+    {
+    dictType *type;
+    void *privdata;
+    dictht ht[2];       // 最重要的就是这个hash结构，之所以是2，是因为采用了渐进的rehash方式
+    int rehashidx;      /* rehashing not in progress if rehashidx == -1 */
+    int iterators;      /* number of iterators currently running */
+    };
+
+  4.3 hash结构
+    struct dictht
+    {
+      dictEntry **table;        // 显然是一个数组，每个桶是一个单向链表
+      unsigned long size;       
+      unsigned long sizemask;   
+      unsigned long used;       
+    };
+
+    struct dictEntry      // 一个单向链表结构
+    {
+      void *key;          // sds类型
+      void *val;          // redisObject类型
+      struct dictEntry *next;
+    };
+
+  4.4 所有的value都是用redisObject类型
+    struct redisObject {
+      unsigned type:4;      // 数据类型, 目前有五种, string, list, set, zset, hash 
+      unsigned storage:2;   // 内存中，还是swap在硬盘上
+      unsigned encoding:4;  // 8种形式的编码, RAW, INT, ..., 详见REDIS_ENCODING_RAW ...
+      unsigned lru:22;      // lru的时间戳
+      int refcount;         // 引用次数
+      void *ptr;            // 实际存储的位置，根据encoding的不同，这里可以是zipmap, ziplist, intset ...
+    };
+
+  5. redis配置优化
+    5.1 基本配置
+      daemonize yes                               # 是否以后台daemon方式运行
+      pidfile /usr/local/redis/var/redis.pid      # pid文件位置 
+      port 6379                                   # 监听的端口号
+      bind 127.0.0.1                              # 监听的IP
+      unixsocket /tmp/redis.sock                  # 使用unixsocket协议
+      unixsocketperm 755
+      syslog-enabled no                           # 是否把日志输出到系统日志
+      syslog-ident redis                          # 指定syslog的标示符，如果'syslog-enabled'是no，则这个选项无效
+      syslog-facility local0                      # 指定syslog 设备（facility), 必须是USER或者LOCAL0到LOCAL7
+      timeout 300                                 # 请求超时时间
+      loglevel debug                              # log信息级别
+      logfile /usr/local/redis/var/redis.log      # log文件位
+      databases 16                                # 开启数据库的数量
+
+    5.2 保存到磁盘
+      save 900 1                                  # 保存快照的频率(前一次快照900秒后，如果已经执行了1次写操作，则保存)
+      save 300 10
+      save 60 10000
+      stop-writes-on-bgsave-error yes             # 如果保存磁盘出错，则写入失败。可以及时发现redis错误
+      rdbcompression yes                          # 是否使用压缩
+      rdbchecksum yes                             # 数据文件有一个CRC64的校验和，确保文件无误。当然也是需要牺牲性能。
+      dbfilename dump.rdb                         # 数据快照文件名(只是文件名，不包括目录) 
+      dir /usr/local/redis/var/                   # 数据快照的保存目录(这个是目录)
+
+    5.3 主从复制
+      slaveof <masterip> <masterport>             # 显然，是在从机上面设置的，数据是需要拉的(无需主机配置)
+      masterauth <master-password>                # 如果主机设置了密码
+      slave-serve-stale-data yes                  # 如果主机挂掉了，从机是否还提供服务
+      slave-read-only yes                         # 只读
+      repl-ping-slave-period 10                   # slave发送PINGS到master的时间间隔
+      repl-timeout 60                             # IO超时时间, 必须必repl-ping-slave-period长，否则，你懂的
+      slave-priority 100
+
+    5.4 安全
+      requirepass foobared                        # 设置密码
+      rename-command CONFIG b840fc02d524045       # 给配置改名，也可以rename-command CONFIG "" 来禁掉命令
+
+    5.5 限制(LIMITS)
+      maxclients 10000                            # 最大连接数
+      maxmemory <bytes>                           # 最大内存数
+      maxmemory-policy volatile-lru               # 超过最大内存后的策略
+      maxmemory-samples 3                         # LRU算法的样本数
+
+    5.6 操作日志(appendonly)
+      appendonly no                               # 是否开启appendonly log，开启的话每次写操作会记一条log，这会提高数据抗风险能力，但影响效率。 
+      appendfilename appendonly.aof               # log文件名称
+      appendfsync everysec                        # 同步方式: no: 等操作系统进行数据缓存同步到磁盘; always: 每次更新操作后手动调用fsync()将数据写到磁盘; everysec: 每秒同步一次(可见，就算是everysec也会丢失数据)
+      aof ...
+
+    5.7 lua脚本设置
+      lua-time-limit 5000
+
+    5.8 慢查询日志
+      slowlog-log-slower-than 10000               # 单位: 微秒
+      slowlog-max-len 128                         # 慢查询个数，数据是放在内存中的
+
+    5.9 高级配置
+      hash-max-ziplist-entries 512                # 都是经验值，一般不要去改动
+      hash-max-ziplist-value 64
+      list-max-ziplist-entries 512
+      list-max-ziplist-value 64
+      set-max-intset-entries 512
+      zset-max-ziplist-entries 128
+      zset-max-ziplist-value 64
+      activerehashing yes                         # rehash机制，会占用一部分内存，但可以提高效率
+      client-output-buffer-limit normal 0 0 0     # client端buffer的限制
+      client-output-buffer-limit slave 256mb 64mb 60
+      client-output-buffer-limit pubsub 32mb 8mb 60
+
+    5.10 include
+      include /path/to/local.conf                 # 可以把配置写在别的地方, 这样做非常利于配置管理
+      include /path/to/other.conf

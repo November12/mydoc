@@ -1,0 +1,68 @@
+最最完整的语法规则，可以查阅这里。http://wiki.apache.org/hadoop/Hive/LanguageManual
+
+1. 语法规则
+  一次命令(可批量)以分号作为结束
+  不区分大小写
+  
+  非交互模式:
+    hive -f script.q
+    hive -e 'select * from dummy'
+    
+
+2. DDL 操作
+  1) 创建表
+    create table optional_user_day (user string, datetime bigint)
+    row format delimited fields terminated by ','
+    lines terminated by '\n' stored as textfile;
+
+
+3. DML 操作
+  1) 查询
+    show tables;
+    show functions;             # 显示内置函数
+  2) 加载数据:
+    # 加上overwrite，会将数据库目录清空。不加则为添加
+    LOAD DATA LOCAL INPATH 'input/ncdc/micro-tab/sample.txt' overwrite into table records;
+  3) SELECT
+    select year, MAX(temperature) from records where temperature = 30 group by year;
+    select的结果，可以放在多个位置:
+    1. 放到另一个table中
+      insert overwrite table test select uid,name from test2;
+    2. 放到本地文件系统
+      INSERT OVERWRITE LOCAL DIRECTORY '/tmp/reg_3' SELECT a.* FROM events a;
+    3. 放到hdfs文件系统
+      INSERT OVERWRITE DIRECTORY '/tmp/hdfs_out' SELECT a.* FROM invites a WHERE a.ds='<DATE>';
+      
+
+    
+2. 数据类型
+  基本数据类型:
+    tinyint     1字节有符号
+    smallint    2字节有符号
+    int         4字节有符号
+    bigint      8字节有符号
+    float       4字节
+    double      8字节
+    boolean     true/false
+    string      字符串
+  复杂数据类型:
+    array       有序字段，类型必须相同
+    map         无序key/value, key和value的类型必须相同
+    struct      一组命名字段
+    
+    
+
+
+
+
+
+    
+INSERT OVERWRITE LOCAL DIRECTORY '/tmp/reg_3' select count(*) as s, stock, action from optional_user_day GROUP by stock, action sort by s;
+    
+T [ALL | DISTINCT] select_expr, select_expr, ...FROM table_reference[WHERE where_condition][GROUP BY col_list][CLUSTER BY col_list  | [DISTRIBUTE BY col_list] [SORT BY col_list]][LIMIT number] 
+    
+    
+    
+
+
+LOAD DATA LOCAL INPATH '/home/hadoop/login.txt' OVERWRITE INTO TABLE login PARTITION (dt='20130101'); 

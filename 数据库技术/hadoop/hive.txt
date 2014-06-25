@@ -1,0 +1,274 @@
+  关键词: 数据仓库框架
+
+1. 简介
+  Hive是一个构建在Hadoop上的数据仓库框架。它把SQL查询转换为一系列的MapReduce作业。
+  Hive的设计目的是让擅长SQL的分析师(但java编程较弱)能在HDFS上运行查询。
+  虽然SQL并非处理"大数据"的理想工具，但优势是大家都非常熟悉它。
+  所以说，Hive并不是一个高效的工具，只能让事情变得简单而已。(经常性的查询，还是写成mapreduce更好)
+  
+  
+2. Hive上的数据
+  Hive的数据放在HDFS上(好像是废话)
+  路径由选项 hive.metastore.warehouse.dir 控制，默认是/usr/hive/warehouse
+  目录结构如下
+    ../
+      table1/
+        file1
+        file2
+      table2/
+        file1
+        file2  
+  需要注意的是，数据文件在存储时，按原样保存，并不解析。数据文件的格式参照附一的CREATE TABLE
+
+  
+3. Hive的体系结构
+  3.1 配置
+    依靠以下优先级，依次读取配置(所以安装hive配置极其简单，设置好hadoop路径，就能直接使用hdfs和hadoop了)
+      Hive SET
+      ./hive -hiveconf
+      hive-site.xml
+      hive-default.xml
+      hadoop-site.xml
+      hadoop-default.xml
+
+  3.2 日志
+    日志默认放置在/tmp/$user/中，也可通过conf/hive-log4j.properties配置路径、打印等级等
+    通过-hiveconf也可方便指定, 如
+      ./hive -hiveconf hive.root.logger=DEBUG,console         # 打印调式信息到控制台
+      
+  3.3 Hive Service
+    如果说./hive可以提供shell服务的话，那么./hive还可以提供其它的服务
+    ./hive --service serviceName --help
+    其中serviceName可以是:
+    cli:        shell服务 (即默认值)
+    hiveserver: 以Trift服务的形式运行(Thrift,ODBC,JDBC都可连接)
+    hwi:        Web接口
+    metastore:  让metastore作为一个单独的远程进程进行。(默认情况下，metastore和Hive服务运行在一个进程中)
+    
+    
+4. metastore
+  4.1 metastore介绍
+    metastore是用来存放表格、数据库定义等元数据的。(metastore本身也是一个数据库)
+    存放的内容主要包括:
+      桶信息
+      表信息(表结构，行列分隔符，NULL表示，存储位置等)
+      分区信息
+    通过这些信息，可以将HQL语句，分解为表、字段、分区等hive对象。(简单的说，hive拿到HQL，只有查询metastore之后，才知道该怎么做)
+  
+  4.2 metastore结构
+    metastore包含两部分:
+      1. metastore服务
+        hive只管像metasotre服务要数据，不关心存储。
+        这种方式，也为后面多种metastore存储奠定了基础。
+      2. metastore后台数据存储
+        metasotore数据也需要一个数据库来进行存储。常用的数据库为Derby(本地), Mysql
+  
+  4.3 交互方式
+    很明确的层级关系
+    ①hive服务 -> ②metastore服务 -> ③metastore存储
+      
+  4.4 metastore的3种存储方式:
+    1. Embedded metastore
+      ①②③放在同一个JVM中。显然，要想开两个①，就必须开两个③，但③不可能开两个。因此这种方式仅支持单会话。
+      而且metastore_db会创建到当前目录下。也就是说，你在a目录下create table，然后到b目录下，想去select。对不起，没找到table。
+    2. Local metastore
+      ①②放在同一个JVM中。③独立出来，用Mysql提供存储。这样多会话就解决了。
+    3. Remote metastore
+      ①②③都独立出来。
+      
+      
+5. 表
+  5.1 托管表和外部表
+    托管表，数据会移动到数据仓库指向的路径(移动而非复制); 外部表只记录数据路径。
+    删除表时，托管表将数据删除(重复强调，小心丢失数据)，外部表只删除元数据。
+    托管表的创建方法:
+      create table managed_table(dummy string);
+      load data inpath '/user/tom/data.txt' into table managed_table;
+    外部表的创建方法:
+      create EXTERNAL table external_table(dummy string) location '/user/tom/external_table';
+      load data inpath '/user/tom/data.txt' into table external_table;
+     
+  5.2 分区和桶
+    无论是分区还是分桶，hive对输入数据并不做解析，所有的约定，都建立在人工做好并正确使用的基础之上。
+    5.2.1 分区
+      简单的说，分区是将某些文件中恒定不变的列，从数据列中分离出来，成为分区列。
+      举个例子，跨国公司每天收集全球各分机构日志并加以分析。文件需要有4列(日期, 时间, 国家, msg)
+      但具体到每一个文件，日期和国家是不变的。
+      如果要查询，where 日期='20140101' and 国家='中国'，发现是不是只需在某些文件中查询就可以了呢。这样就可以大大的提高查询效率。
+      而且，文件的存储还省空间。只需要(时间, msg)两列就可以了。
+      再具体看看这个例子如何实现:
+        create table logs(ts bigint, line string) partitioned by (dt string, country string);
+        表的列和分区的列不能重复。
+        load data local lnpath 'input/hive/partitions/file1' into table logs partition (dt='2001-01-01', country='gb')
+        load data时，需要显示指定具体的值
+        文件file1会存储在logs/dt=2001-01-01/country=gb/file1  (map的输入必须以文件夹为单位，所以hive这样存储也就是理所当然的事情)
+      使用的时候，甚至可以不用关心那些列是表列，那些列是分区列。
+        select ts, dt, line from logs where country='GB'
+    5.2.2 桶
+      在表或分区中，将指定列的值hash，分别存储在不同的桶中。
+      为什么要hash分桶呢? 按照逻辑意义分类，这是分区的事。在这里，目的是 - 随机、均匀、分类
+        随机，意味着样本独立。也就是可以做抽样统计。这在测试HQL语句，以及大数据计算时很有用。
+        均匀，才能很方便的抽取1/2, 1/3 ...
+        分类，这是随机中透出的规则，通过这种规则，可以方便join。
+      同样，还是举例说明，由于例子较长，请见"附一: 分桶例子"
+      这个例子只说到了采样，采样对文件的个数感兴趣，但对文件顺序不感兴趣。
+      join会在后面说到，会使用到hash值，会利用到文件的顺序。
+      
+  5.3 存储格式
+    5.3.1 分割符
+      lines: 默认'\n'
+      rows:  默认'\001'
+      ...
+      
+    5.3.2 文件格式
+      textfile: 最常用的格式
+      SequenceFile: 没有行列分割符，依次存储
+      RCFile: 先对行分片，在片中，按列存储
+
+  5.4 导入数据
+    5.4.1 load data
+      把文件复制或移动到表的目录中
+    5.4.2 已知表中提取
+      从一个表抽取数据到另一个表
+      overwrite是必须的，填充的表必须是空的
+      insert overwrite table target select col1, col2 from source;
+    5.4.3 多表插入
+      源表只有records2一个
+      from records2
+      insert overwrite table stations_by_year
+        select year, count(distinct station)
+        group by year
+      insert overwrite table records_by_year
+        select year, count(1)
+        group by year
+    5.4.4 结果存新表
+      create table target as select col1, col2 from source;
+    5.4.5 Sqoop
+      从关系数据库导入数据到Hive(参照Sqoop.txt)
+
+  5.5 表的修改
+    由于hive使用的是"schema on read"，所以修改表非常容易。
+    当然了，新的数据结构需要自己维护。
+    alter table source table1 to table2;            # 表的重命名(除修改元数据以外，托管表还会重命名目录)
+    alter table table1 add columns (col3 string);   # 表结构修改(只修改表的元数据)
+    
+  5.6 表的丢弃
+    删除元数据和数据
+      drop table ..
+    只删除数据
+      删除hdfs上的所有数据文件即可
+
+
+6. 数据查询
+  前面说了这么多，都是为了数据查询做准备。
+  这里，我们看看，hive究竟可以为我们做些什么。
+  6.1 order by (全排序)
+    order by可以达到完全排序的效果。不过是用一个reducer达成的，因此效率非常低。(不适合大规模数据集)
+    
+  6.2 sort by (部分排序)
+    sort by 可以利用多个reducer并行完成，但reducer彼此间是不排序的。
+    from record2 select year, temperature 
+    distribute by year 
+    sort by year ASC, temperature DESC          # 对于每个年份内，是排序的
+    
+  6.3 外部的MapReduce脚本
+    使用MAP、REDUCE、TRANSFORM这样的关键字，可以调用外部脚本。
+    ...
+
+  6.4 join (连接)
+    select sales.*, things.* from sales join things on (sales.id = things.id);                # 内连接
+    select sales.*, things.* from sales left outer join things on (sales.id = things.id);     # 左连接 (还有right left)
+    select sales.*, things.* from sales full outer join thing on (sales.id = things.id);      # 全外连接
+    ...
+    注: Hive只支持连接条件是等号的情况
+    
+  6.5 子查询
+    对于关系数据库，子查询可以取代任何表达式的位置。
+    但在Hive，只支持from中使用子查询。
+  
+  6.6 视图
+    Hive中可以通过create view来创建视图。创建和使用视图，和MySQL相似。
+    需要注意的是，视图并不存放在磁盘中，只有调用的时候，才去执行相应的HQL命令。
+    因此，需要一次查询，多次使用的场合，可以使用create table ... as select 创建物理存储表
+
+      
+7. 用户定义函数
+  
+      
+      
+        
+    
+      
+    
+4. Hive vs MySQL
+  4.1 schema on write VS schema on read
+    MySQL是on write模式，写数据时需要解析数据，并按照事先约定的模式保存。好处是查询的时候比较迅速。
+    Hive是on read模式, 写数据只是简单的复制，在读的时候再做解析。好处是加载数据很快，而且加载时不需要约定模式。
+  
+  4.2 更新、事务、索引
+    这些都是MySQL中重要的概念，但在Hive里，基于全表的扫描是常态。
+    到目前为止，还无法直接提供这些功能。(真的提供了这些功能，那还是NoSQL吗)
+    
+  
+5. HiveQL
+  它是一种SQL的方言，如果熟悉MySQL，会觉得Hive很亲切。
+
+      
+  5.2 函数
+    到目前为止，一共168个。
+    通过hive shell中，可以通过show functions;查询
+    
+  5.3 表
+    Hive数据存放到HDFS上，而元数据存放到metastore上。
+    
+  5.4 分区和桶
+    
+      
+
+    
+
+      
+
+    z
+
+
+  
+  
+  
+  
+  
+附一: 分桶例子
+  step1: 创建某临时表 
+          create table student_tmp(id int, age int, name string, stat_date string) row format delimited fields terminated by ',';
+        导入数据
+          cat 1.txt
+            1,20,zxm,20120801
+            2,21,ljz,20120801
+            3,19,cds,20120801
+            4,18,mac,20120801
+            5,22,android,20120801
+            6,23,symbian,20120801
+            7,25,wp,20120801
+          load data local inpath '1.txt' into table student_tmp;
+        select * from student_tmp;
+  step2: 创建真正需要使用的分桶表
+          create table student(id int, age int, name string) partitioned by(stat_date string) 
+          clustered by(id) sorted by(age) into 2 buckets
+          row format delimited fields terminated by ',';
+        设置环境变量 
+          set hive.enforce.bucketing = true; 确保reduce数量适应bucket数量 (否则2 buckets的效果出不来)
+  step3: 把临时表的数据填进去
+          from student_tmp insert overwrite table student partition(stat_date="20120802")
+          select id,age,name where stat_date="20120801" sort by age;
+  step4: 看看我们做了些什么
+          hadoop dfs -lsr /user/hive/warehouse/studentstat_date=20120802/
+            /user/hive/warehouse/student/stat_date=20120802/000000_0
+            /user/hive/warehouse/student/stat_date=20120802/000001_0
+        看看 select * from student，是不是奇偶分开了
+        再看看 select * from student tablesample(bucket 1 out of 2 on id), 是不是我们可以做抽样了
+        顺便说一下tablesample，上面是抽取1/2出来。
+        抽取的比例，必须确保分的桶数量能满足(2 buckets, 4 buckets, 6 buckets都可满足1/2)
+  
+  
+  
+

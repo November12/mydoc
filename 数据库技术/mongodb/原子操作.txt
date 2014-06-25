@@ -1,0 +1,17 @@
+mongodb的目标是"lightweight and fast"
+为此，牺牲了事务以及事务锁(traditional locking and complex transactions)
+
+当然，mongodb也还是提供了一些简单的原子操作:
+1. 操作符
+$set            // 插入或更新一条记录; db.test.update({C2:1}, {$set: {C1:3}})
+$unset - delete a particular field (v1.3+) 
+$inc - increment a particular value by a certain amount 
+$push - append a value to an array 
+$pushAll - append several values to an array 
+$pull - remove a value(s) from an existing array 
+$pullAll - remove several value(s) from an existing array 
+$bit - bitwise operations 
+
+
+1
+

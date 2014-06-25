@@ -1,0 +1,19 @@
+SSO英文全称Single Sign On，单点登录。
+
+前提: 统一的身份认证
+
+
+认证服务器之间标准的通讯协议(例如SAML)
+
+ticket
+
+
+
+1) cookies:       将ticket保存到cookies。拿ticket进行验证。          # cookies是明文保存的，拿到ticket很容易
+2) Broker-based:  基于经纪人: 如Kerberos, 
+3) Agent-based:   基于代理人，SSH。                                  # 这算什么单点登录
+4) Token-based:   如SecurID, WebID。如密码矩阵，银行令牌等。         # 不是基于用户名、密码
+5) SAML:          基于安全断言标记语言
+
+
+

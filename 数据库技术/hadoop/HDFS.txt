@@ -1,0 +1,71 @@
+1. HDFS(Hadoop Distributed FileSystem)
+  Hadoop作为一个大数据处理，必然需要一个分布式文件系统。
+  
+  
+2. HDFS的设计
+  HDFS是一个分布式文件系统，但也是一个特殊的文件系统，有优点，但并不适合所有场合。
+  超大文件的存储:            这里的超大文件，可以是几百TB的大文件。(文件系统的所有元数据都存储在内存中，受到内存大小的限制，不适合小文件存储)
+  一次写入、多次读取:        读取一行的响应时间并不重要，重要的是甚至读取整个文件的时间。(高吞吐量更重要, 不适合于低延迟使用, 写入后也不要修改)
+  普通商用硬件:              并不需要非常可靠的硬件资源
+  
+  
+3. HDFS的概念
+  数据块: 和其他文件系统一样，HDFS也有block的概念。HDFS的block默认大小64MB, 实际使用甚至更大。(显然，这对大文件有利, 对小文件不利)
+  namenode和datanode: 管理者-工作者模式, 所有的datanode都需要和namenode联系，二datanode彼此间不联系。
+  
+  
+4. 支持的其它文件系统
+  Hadoop有一个抽象的文件系统概念，HDFS只是其中的一个实现。
+  
+  Local       使用本地文件系统
+  HFTP        名字叫ftp，实际和ftp毫无关系，通过http协议实现
+  HSFTP       同上，通过https实现
+  FTP         FTP服务器支持的文件系统
+  S3          Amazon S3
+  ...
+  
+  
+5. 接口
+  5.1 java接口
+    Hadoop是用java写的，所以java的接口是最全面的。强烈推荐。
+  5.2 Thrift
+    为了使用Thrift API，需要运行提供Thrift服务的Java服务器，并以代理的方式访问Hadoop文件系统。
+    好处是任何具有Thrift绑定的语言都可以访问HDFS。
+    坏处是，中间加了一层代理。
+  5.3 C语言
+    Hadoop提供了一个libhdfs的C语言库，但接口比较简陋，还是直接使用Java的好。
+  5.4 FUSE
+    FUSE是一个不错的概念，Hadoop也支持它。
+  5.5 HTTP && FTP
+    不用多说了，一般用不到，效率也太慢了。
+    
+
+6. 数据流
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+附一: shell命令
+  ./hadoop fs -help         -- 查看hdfs命令帮助
+  ./hadoop fs -copyFromLocal input/docs/quangle.txt hdfs://localhost/user/tom/quangle.txt     -- 绝对路径
+ 等同于 ./hadoop fs -copyFromLocal quangle.txt /user/tom/quangle.txt                          -- 相对路径
+ 等同于 ./hadoop fs -copyFromLocal quangle.txt quangle.txt                                    -- 默认home路径
+  ./hadoop fs -copyToLocal quangle.txt quangle.txt
+  ./hadoop fs -mkdir books
+  ./hadoop fs -ls .
+  ./hadoop -chmod a+w /tmp
+  
+  
+
+  
+  
+  
+  
+  

@@ -1,0 +1,69 @@
+1. 如果有两个完全独立的服务（比如说两个不同系统间的服务）需要相互交换数据，我们该如何实现？
+  方法一: 通过socket通讯, 自己拟定协议
+  方法二: rpc模式, 但必须被调用，
+  方法三: JMS
+
+
+2. JMS简介
+  Java Message Service, Java消息服务, 是一种与厂商无关的API(接口标准)
+  可以用于在两个应用程序之间，或分布式系统中发送消息，进行异步通信。
+  绝大多数MOM(面向消息中间件)提供商都对JMS提供支持。
+  
+  消息是JMS中的一种类型对象，由两部分组成：报头和消息主体。
+  报头由路由信息以及有关该消息的元数据组成。
+  消息主体则携带着应用程序的数据或有效负载。
+
+3. JMS的体系架构
+  JMS消息(message)
+    包括可以在JMS客户之间传递的数据的对象
+    一条JMS消息包括三部分: 消息头、消息属性、消息体。其实消息头也就是默认属性。
+    消息的类型可以有Text、Map、Bytes、Stream、Object
+  JMS提供者(provider)
+    如activeMQ
+  JMS生产者(producer)
+    创建并发送消息的JMS客户。
+  JMS消费者(consumer)
+    接收消息的JMS客户。
+    同步调用: 主动调用receive方法。 异步调用：设置监听。(通过MessageListener中的onMessage方法)
+  发布方式
+    点对点(queue): 稳定的，一定能收到
+    发布/订阅(topic): 不稳定，只有订阅之后才能收到
+    
+4. JMS的可靠性机制
+  1) 确认
+    事务性会话中, 自动确认。
+    非事务性会话中，有3中确认方式选择。(AUTO_ACKNOWLEDGE、CLIENT_ACKNOWLEDGE、DUPS_ACKNOWLEDGE)
+  2) 持久性
+    PERSISTENT: JMS provider持久保存信息(磁盘)
+    NON_PERSISTENT: JMS provider不持久保存信息(内存)
+  3) 优先级
+    可指定优先级0(最低)到9(最高)，默认为4
+    但这不能作为顺序提交的依据
+  4) 过期
+    可为消息设置保鲜期，默认是永不过期
+  5) 持久订阅
+    可以确保数据不会丢失，但只能有一个订阅者(这是JMS的要求，但实际上会做得更好，可以有多个订阅者)
+  6) 事务
+    事务性会话要求，一个事务以commit或rollback结束。另一个事务自动开始。
+    消息的生产和消费，不能包含在同一个事务里。
+
+5. 数据可靠性
+  JMS从机制上来看，主要是作为数据发布使用的，数据可靠性方面并不是保证每条数据都能到达。这限制了其使用场景。
+  1) 确认
+    确认中，最可靠的是CLIENT_ACKNOWLEDGE，需要在onMessage中主动调用ack函数。
+    但问题是，ack中并未有消息号，一旦ack，所有发送的全都被确认，这可能会丢失数据。
+  2) 持久订阅
+    持久订阅确实可以保证不丢失数据，但无法处理多个订阅者，单个订阅者使用场景极其有限。
+
+6. JMS的实现
+  1) ActiveMQ
+      名声最大的JMS provider。但实际测试，以及网上评论来看，不是很稳定。
+      jbossmq(jboss 4)
+      jboss messaging (jboss 5)
+      joram-4.3.21 2006-09-22
+      openjms-0.7.7-alpha-3.zip December 26,2005
+      mantamq
+      ubermq
+      SomnifugiJMS 2005-7-27
+  
+

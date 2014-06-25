@@ -1,0 +1,221 @@
+1. 软硬件清单
+  软件
+    所有软件均可在官网hadoop.apache.org下载到
+    hadoop各模块之间的兼容性不太好，尽量下载经过反复使用的版本
+    以下是经过长时间使用的组合:
+      hadoop-1.0.1            # hadoop-1.0.1.tar.gz
+      hive-0.9.0              # hive-0.9.0.tar.gz
+    
+  硬件篇
+    见文档"hadoop集群.txt"的“集群规范”
+    
+    
+2. 环境准备
+  2.1 修改当前主机名(可选)
+    注: 这一步骤没实际意义，仅仅为了以后辨认主机身份方便而已。如果服务器还做其它用途，建议不更改主机名。
+    vi /etc/sysconfig/network         # 修改HOSTNAME=hujj.hadoop.master, 保存
+    service network restart           # 使之生效
+    hostname                          # 验证
+    
+  2.2 使用静态的ip, gateway
+    vi /etc/sysconfig/network-scripts/ifcfg-eth0
+    
+  2.3 配置hosts文件
+    vi /etc/hosts
+    10.15.62.8 hujj.hadoop.master
+    10.15.62.6 hujj.hadoop.slave1
+    10.15.62.10 hujj.hadoop.slave2
+    10.15.62.11 hujj.hadoop.slave3
+    
+  2.4 master和slave之间能够互通(slave和slave直接不需要ssh)
+      ping hujj.hadoop.slave1         # master -> slave  [OK]
+      ping hujj.hadoop.master         # slave -> master  [OK]
+      
+  2.5 新建hadoop用户
+    注: 所有机器上hadoop的部署目录结构要相同，并且都有一个相同的用户名的帐户。所以最好创建一个hadoop用户
+    adduser hadoop
+    passwd hadoop
+
+  2.6 SSH设置
+    su hadoop -                           # 从root用户切换到hadoop用户
+    cd                                    # 切换到/home/hadoop/目录
+    mkdir .ssh && chmod 755 .ssh          # 创建.ssh目录
+    ssh-keygen -t rsa                     # 仅namenode上执行, 连续3个回车搞定
+    cp .ssh/id_rsa.pub .ssh/authorized_keys
+    scp .ssh/id_rsa.pub hadoop@10.15.62.10:/home/hadoop/.ssh/authorized_keys
+                                          # 将生成的id_rsa.pub的内容复制到每台机器(包括自己)中
+    ssh hujj.hadoop.slave1                # 连接一下，第一次需要yes一次，以后就不需要了(单向即可)
+    
+  2.7 配置环境变量
+    export JAVA_HOME=/usr/java/jdk1.6.0_07
+    export CLASSPATH=$CLASSPATH:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
+    export HADOOP_HOME=/home/hadoop/hadoop-1.0.1
+    export PATH=$JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH:$HOME/bin:$HADOOP_HOME/bin
+    
+    
+3. 安装hadoop
+  3.1 解压
+    tar -xzvf hadoop-1.0.1.tar.gz
+    
+  3.2 创建目录
+    mkdir -p hadoopData/name            
+    mkdir -p hadoopData/data
+    mkdir -p hadoopData/tmp
+    
+  3.3 配置文件
+    1. hdfs-site.xml、core-site.xml、mapred-site.xml的配置详见附录
+    2. hadoop-env.sh 中添加 export JAVA_HOME=/usr/lib/jvm/java-6-sun
+    3. masters
+        hujj.hadoop.master
+       slaves
+        hujj.hadoop.slave1
+        hujj.hadoop.slave2
+        hujj.hadoop.slave3
+    注: 上述所有配置都在master完成，之后拷贝到所有salve上
+
+    
+4. 格式化HDFS
+  ./hadoop namenode -format
+  格式化以后, name目录(namenode)已经有相应文件
+  
+  验证:
+    启动hdfs                          # ./start-dfs.sh
+    ./hadoop fs -mkdir first          # 创建一个目录
+    ./hadoop fs -ls                   # 目录成功创建
+    data目录(datanode)也已经有相应文件
+    
+
+5. Shell脚本
+  hadoop-env.sh                           # 用户配置的相关环境变量
+  hadoop-config.sh                        # 脚本检查和设置相关环境变量
+  
+  start-dfs.sh                            # 启动namenode, datanode, secondarynamenode
+  start-mapred.sh                         # 启动jobtracker, tasktracker
+  start-all.sh                            # 启动start-dfs.sh 和 start-mapred.sh
+  
+  hadoop-daemon.sh                        # 真正的启动脚本
+  slaves.sh                               # 启动slaves上的脚本
+
+  
+注意:
+  都是一些曾经跳过的坑，配置时注意:
+  1. /etc/hosts每台机器都必须配置一样
+  2. ssh不要求slave-slave之间的互通
+  3. 关闭iptable
+    service iptables stop       # 临时
+    chkconfig iptables off      # 永久, 设置需重新启动
+    chkconfig -list iptables    # 查看
+  4. 关闭SELinux
+  5. /etc/sysconfig/network中的HOSTNAME也会导致各种Exception
+      
+      
+附一: hdfs-site.xml
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+    <property>
+        <name>dfs.name.dir</name>
+        <value>/home/hadoop/hadoopData/name</value>                <!-- namenode持久存储路径 -->
+    </property>
+    <property>
+        <name>dfs.data.dir</name>
+        <value>/home/hadoop/hadoopData/data</value>                <!-- datanode持久存储路径 -->
+    </property>
+    <property>
+        <name>fs.replication</name>                                <!-- 数据备份的个数，默认是3 -->
+        <value>2</value>
+    </property>
+    <property>
+        <name>dfs.permissions</name>                               <!-- 是否需要角色权限验证，上传文件时会用到 -->
+        <value>true</value>
+    </property>
+    <property>
+        <name>dfs.support.append</name>                            <!-- 否允许文件APPEND, 尽量不要append -->
+        <value>true</value>
+    </property>
+    <property>
+        <name>dfs.block.size</name>                                <!-- 文件块大小, 默认64MB -->
+        <value>134217728</value>
+    </property>
+</configuration>
+            
+
+附二: core-site.xml
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+    <property>
+        <name>hadoop.tmp.dir</name>                                <!-- 存放nn的临时文件 -->
+        <value>/home/hadoop/hadoopData/tmp</value>
+    </property>
+    <property>
+        <name>fs.default.name</name>                               <!-- 配置NN节点地址和端口号 -->
+        <value>hdfs://10.15.62.8:9000</value>
+    </property>
+    <property>
+        <name>io.file.buffer.size</name>                           <!-- 序列化文件处理时读写buffer的大小 -->
+        <value>4096</value>
+     </property>
+    <property>
+        <name>io.bytes.per.checksum</name>                         <!-- 每校验码所校验的字节数 -->
+        <value>512</value>
+    </property>
+</configuration>
+    
+    
+附三: mapred-site.xml  
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+    <property>
+        <name>mapred.job.tracker</name>                            <!-- jobtracker的位置 -->
+        <value>10.15.107.157:9001</value>
+    </property>
+    <property>
+        <name>io.sort.factor</name>                                <!-- 同时归并的流的数量 -->
+        <value>10</value>
+    </property>
+    <property>
+        <name>io.sort.mb</name>                                    <!-- 排序时内存空间大小 -->
+        <value>100</value>
+    </property>
+    <property>
+        <name>mapred.reduce.parallel.copies</name>
+        <value>5</value>                                           <!-- 最多同时下载5个map的数据 -->
+    </property>
+    <property>
+        <name>mapred.job.reuse.jvm.num.tasks</name>                <!-- JVM重用机制 -->
+        <value>-1</value>
+    </property>
+    <property>
+        <name>mapred.child.java.opts</name>                        <!-- map任务启动内存 -->
+        <value>-Xmx3096m</value>
+    </property>
+    <property>
+      <name>mapred.tasktracker.map.tasks.maximum</name>            <!-- 一个tasktracker至多同时运行的map任务数, 与CPU核数有关 -->
+      <value>8</value>
+    </property>
+    <property>
+            <name>mapred.tasktracker.reduce.tasks.maximum</name>   <!-- 一个tasktracker至多同时运行的reduce任务数, 与CPU核数有关 -->
+        <value>7</value>
+    </property>
+    <property>
+        <name>mapred.compress.map.output</name>                    <!-- map中间结果是否使用压缩 -->
+        <value>false</value>
+    </property>
+</configuration>
+
+
+附四: HTTP端口
+  jobtracker: 50030
+  tasktracker: 50060
+  namenode: 50070
+  datanode: 50075
+  辅助namenode: 50090
+
+     
+
+

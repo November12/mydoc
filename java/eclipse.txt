@@ -1,0 +1,63 @@
+1. 简介
+  设计理念: 一切皆为插件, 插件动态调用
+  IDE是java程序，采用SWT开发
+  极为强大的集成开发环境。
+  多国语言包，和中文帮助
+  
+2. 
+  2.1 创建项目
+    目录结构
+      project/
+        src/
+        bin/
+        .classpath          配置环境变量(加载库的)
+        .project
+
+  2.2 创建类
+    
+  
+  
+package
+  全世界的java程序，都放在一棵代码树下。
+  为什么既要.java开始声明一下，又要严格的按照目录存放呢? 
+  直接按目录格式存放，不是可以表明所属的package吗，不是多此一举吗。
+  这是应为加载class之后，也需要通过class来识别其package名。否则同名class将很难区分。
+  
+如何导入jar包
+  project->Properties->Java Build Path->Libraries
+  Add External Jars
+  
+运行时，如何添加参数
+  java文件->Properties->Run/Debug Settings->New->Arguments
+  参数之间，用空格隔开
+  
+工作集 - Working set
+  管理项目的一个概念，可以将项目或项目文件随意加入或删除工作集，仅仅只会影响到视图。
+  为聚焦工作内容提供方便。
+
+如何将项目打包成jar包
+  项目->Export->Java->Runable JAR file
+  命令行 java -jar a.jar arg1 arg2
+  
+  
+  
+
+  
+  
+  
+  
+SWT/JFace: 
+  SWT是一个开源的GUI编程框架，JFace是SWT的扩展包。直接调用本机的gui api(缺点是形成了和操作系统的耦合, 对每种操作系统都要做相应的移植)
+  
+AWT/SWING:
+  java的标准图形API, 模拟本机图形接口(因此速度慢，且界面风格和本机不一致)
+  
+  
+  
+  
+常用快捷键:
+  自动整理缩进              Ctrl+Shift+F
+  代码自动完成              Shift+Alt+S  (构造函数、)
+  代码层次跳回              ALT+方向键左
+
+  

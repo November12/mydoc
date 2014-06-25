@@ -1,0 +1,102 @@
+把HBase放入到Hadoop目录，还是分离成新的目录，是个十分纠结的问题。
+最后还是将其分离出来，原因并非是因为它十分重要，而是HBase和Hadoop外观上太不相同，HBase更多的表现出来的是一个数据库。
+(apache也将hbase从hadoop中分离出来，作为另一个顶级开源项目)
+但别忘了，HBase的思想，以及基础，都是建立在Hadoop之上的。研究HBase，是无法分离Hadoop的。
+
+1. HBase介绍
+  HBase是一个在HDFS上开发的面向列的分布式数据库。  (关键词: HDFS，列，分布式)
+  所有对表的访问，都要通过主键(rowkey)。可以认为HBase是kv存储的延生。
+
+  HBase是HDFS的补充，解决了HDFS无法读取单条记录的问题。
+  但其本身，仍然带着浓厚的kv色彩，在选型时尤其注意。
+  
+  
+2. 数据结构
+  表
+    区域                      集群分布数据的最小单位(类似RDBMS中的水平分区,分表), 区域(表，第一行，最后一行)
+      行                      行是排序的。对行的更新是原子的。
+        列族                  调优和存储的最小单位，必须事先定义。 (HBase是面向列族的存储)
+          列                  也就是"单元格", 单元格是有版本概念的。但无需事先定义。
+  需要注意的是，对行的更新都是原子的
+
+
+3. HBase的架构
+  3.1 HBase遵循Hadoop的思想
+    HBase也是尽量遵循Hadoop模型(甚至直接继承Hadoop的实现)
+    HDFS分为namenode(master)和datanode(slave)，namenode管理block，datanode存储block
+    MapReduce分为jobtracker(master)和tasktracker(slave)，jobtracker管理job，tasktracker执行job
+    在这里, HBase分为master和Regionserver(slave)，master负责管理区域，Regionserver负责存储区域
+  
+  3.2 特殊目录表 -ROOT-，.META.
+    这两张特殊目录表结构相同。
+    RowKey
+      由三部分组成，之间用逗号隔开。TableName,StartKey,TimeStamp。
+      如 Table1,RK10000,12345678  
+    info
+      regioninfo
+        Region的详细信息，StartKey，EndKey等
+      server
+        RegionServer的地址
+      serverstartcode
+        
+    为什么要两个结构相同的表呢?
+      那是因为region的信息太多了，.META.表无法放在一台机器上。于是再建了一级索引，也就是-ROOT-
+      通过-ROOT-找.META.的region, 通过.META.找普通table的region
+    
+  3.3 客户端的访问
+    客户端每次行操作可能需要访问三次:
+      1.客户端访问zookeeper, 查找-ROOT-表的位置。
+      2.客户端访问-ROOT-表，查找.META位置。(-ROOT-表包含.META.表的区域列表)
+      3.客户端访问.META.表, 查找数据所在的区域信息。(.META.中每行即一条区域信息, 可以看做一个索引)
+      4.客户端访问Regionserver，获取需要的数据。
+    注: 客户端会有缓存机制，不必每次访问都需要以上步骤。而缓存不会自行清理，只有当客户端发现缓存错误时才清理。
+  
+  3.4 Regionserver的写操作
+    1.首先追加到"commit log"   (commit log也必须存放到HDFS，以便Regionserver失效时迁移region)
+    2.然后加入内存中的memstore
+    3.当memstore满后, 会触发flush机制持久化到磁盘。并且多个flush的文件最终会被合并压缩
+      (这种log -> memstore -> disk的做法在NoSQL里面非常普遍)
+      
+  3.5 rowkey
+    在hbase里，这是非常重要的概念。确定了rowkey，也就确定了查询方式。
+    所以说，使用hbase之前，必须确定业务，并试图找出合理的rowkey。(这是使用的前提)
+    这些工作都OK以后，才可以继续建模。
+
+
+4. 数据写入
+  4.1 基于单元格的写入
+    这里要说的是，hbase的插入，和mysql思路完全不一样。mysql是基于行的插入。
+    hbase则是基于单元格的插入。或者说，可以看做hbase是若干个rowkey:columnfamiy:column -> value的kv操作
+    因此，如果已有列c1, 再插入c1则覆盖，插入c2，则c1,c2均存在。
+   
+  4.2 批量加载
+    HBase的数据加载，往往都是批量加载的。批量加载必然是采用MapReduce，但需要注意以下问题
+    注意锁表的问题
+      由于排序是基于RowKey的，这导致很有可能所有的更新，都操作在一个region中，破坏了分布式的优势，也加重的锁表的问题。
+    实例化HTable的开销
+      实例化HTable是有代价的，尽量在configure中实例化
+
+
+5. 查询
+  HBase的查询实现只提供两种方式：
+    1、按指定RowKey获取唯一一条记录，get方法（org.apache.hadoop.hbase.client.Get）
+    2、按指定的条件获取一批记录，scan方法（org.apache.hadoop.hbase.client.Scan）
+
+  这两种方法，都是基于RowKey的查询。因此，如何设计RowKey显得至关重要。
+  这必须根据场景应用来决定。
+
+
+6. 什么时候使用HBase
+  Hadoop是为了处理大数据的，所以HBase也是干的同样的活。
+  大表
+    你可以创建一个拥有数十亿规模的大表，并且拥有上百万个列。
+  更新频繁
+    HBase注重的是吞吐量，而并非查询效率。充分的利用分布式，可以同时在多台服务器上，进行每秒数十万次的更新。
+    而且更新不会随着数据量的增长而变慢。
+    这些，都是传统了RDBMS很难做到的。(通过分区，RDBMS也可以做类似的事情，但开发和维护的难度都很高)
+  强一致性
+    值得一提的是，HBase并非像其它NoSQL解决方案，采用最终一致性。HBase是强一致性。
+  
+  不适合的场合，主要是
+    数据规模不大，检索条件复杂，需要遵从严格的ACID。
+

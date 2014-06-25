@@ -1,0 +1,78 @@
+1. 持久化
+  无论是namenode, 还是datanode，都有一个VERSION文件，唯一的标识自己，以便确认身份。
+  1.1 namenode的持久化
+    namenode在内存中维护文件系统的元数据。
+    路径为 ${dfs.name.dir}/，
+    1.1.1 current/fsimage
+      fsimage是文件系统元数据的一个永久性检查点。
+      fsimage是一个大型文件(GB级)。namenode发生故障时，会通过检查点 + 日志来恢复。
+    1.1.2 current/edits
+      日志文件，每次写操作，都会记录到编辑日志当中。
+  1.2 辅助namenode的持久化
+    路径为 ${fs.checkpoint.dir}/
+    有current/目录和previous.checkpoint/目录，目录下内容和namenode一致
+  1.3 dataname的持久化
+    路径为 ${dfs.data.dir}/
+    1.3.1 current目录
+      块文件: 仅包含原始数据.  如 blk_7578996466497314759
+      块的元数据文件: 描述块文件的。 如 blk_7578996466497314759_1835.meta
+      如果块文件很多，则会新建subdir开头的子目录。最终形成树形结构。
+      
+
+2. 安全模式
+  namenode每次启动时，先进入安全模式。等待一定条件满足后，才会退出安全模式。
+  安全模式下是只读的，所有的写操作都会失败。
+  2.1 为什么启动时需要进入安全模式
+    因为系统中数据块的位置信息，不是保存在namenode上的。（namenode的fsimage保存的是访问权限、修改时间等信息)
+    所以，namenode启动后，需要等待datanode发送给自己这些信息。
+    数以千记的datanode发送这些信息，肯定需要一段时间。而这段时间就是安全模式。
+  2.2 退出安全模式的条件
+    dfs.replication.min: 默认 1
+    dfs.safemode.threshold.pct:  默认 0.999
+    dfs.safemode.extension: 默认 30000，小型集群可设置为0
+    如果有99.9%的文件，已经有了1个副本，再等待30秒，即可退出。
+  2.3 shell命令
+    ./hadoop dfsadmin -safemode get     # 当前是否处于安全模式
+    ./hadoop dfsadmin -safemode enter   # 进入安全模式
+    ./hadoop dfsadmin -safemode leave   # 退出安全模式
+    ./hadoop dfsadmin -safemode wait    # 暂退出安全模式，直到下一个命令执行完毕
+    
+
+3. 日志
+  3.1 日志审计
+    namenode可以记录每次对系统访问的请求
+    
+    
+    
+4. 管理工具
+  4.1 dfsadmin
+    ./hadoop dfsadmin -help
+  4.2 fsck
+    检查HDFS中文件的健康状况
+    过多复制的块: (自动修复)
+    仍需复制的块: (自动修复)
+    错误复制的块: 存放位置有误，如所有副本都在同一机架上。(手动修复)
+    损坏的块: (自动修复)
+    缺失的块: 没有任何副本的块
+  4.3 datanode块扫描器
+    默认情况下，每隔三周块扫描器就会检测块，以应对可能的磁盘故障。
+  4.4 datanode的均衡器
+    将块从忙碌的节点移到相对空闲的节点。
+    
+
+5. 监控
+  ..
+  
+  
+6. JMX
+  Hadoop包括多个托管MBean, 可以将Hadoop发布给支持JMX的应用。
+  ..
+  
+  
+7. 维护
+  ..
+  
+  
+8. 升级
+  ..
+

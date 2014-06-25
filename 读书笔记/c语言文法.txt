@@ -1,0 +1,4 @@
+1. 没有布尔类型，不过提供了#include <stdbool.h>头，可以兼容C++的布尔类型
+2. 没有默认参数, 不能做fun(int a=0)这样的类似声明, 如果实在需要，只有用宏来解决
+3. struct AA 声明后，不能AA a; 必须struct AA a; 解决方法就是用typedef
+4. 没有引用类型，不能fun(int& a);

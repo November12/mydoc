@@ -1,0 +1,59 @@
+Tomcat是一个免费的开放源代码的Web应用服务器，属于轻量级应用服务器。
+在中小型系统和并发访问用户不是很多的场合下被普遍使用，是开发和调试JSP 程序的首选。
+
+Tomcat性能
+  采用的BIO的方式，势必性能上会弱于NIO
+  每一个连接开一个线程，对于并发数的影响也非常大。(BIO只能多开线程，没有办法)
+
+Tomcat背景 
+  JSP发布之后，推出了各式各样的JSP引擎。Apache也开始考虑开发一个可以直接提供Web服务的JSP服务器，
+  当然同时也支持Servlet, 这样Tomcat就诞生了。 
+  它也是sun公司官方推荐的servlet和jsp容器，因此其越来 越多的受到软件公司和开发人员的喜爱。
+  servlet和jsp的最新规范都可以在tomcat的新版本中得到实现。
+  其次，Tomcat是完全免费的软件，任何人都可以从互联网上自由地下载。
+  Tomcat与Apache的组合相当完美。
+
+Tomcat可以处理HTML页面，另外也是Servlet和JSP容器。
+
+
+Tomcat架构设计
+  Connector组件
+    1) 接收发过来的tcp连接请求
+    2) 创建线程，专门处理这个连接的请求
+    3) 在线程里，创建和请求端交互的Request和Response对象
+    4) 当收到请求时，交给container处理(connector.getContainer().invoke(request, response))
+    
+  Container组件
+    再看看，交给Container之后，Container是如何处理的。
+    Container有4层子容器，依次是父子关系，Engine、Host、Context、Wrapper (容器的概念, 参考附1)
+    Engine:
+      Engine负责接收和处理来自它所属的Service中的所有Connector的请求。
+      tomcat里，只能有一个Engine
+    Host:
+      顾名思义，Host是主机，但这里是虚拟主机的意思。
+      Host要和一个服务器网络名相关联，而且必须要有一个Host的名字和Engine的defaultHost一致。
+    Context:
+      表示在虚拟主机中运行的web应用程序。
+      一个虚拟主机中能够运行多个Context，它们通过各自的Context Path进行相互区分。
+    Wrapper：
+      它负责管理一个 Servlet，包括的 Servlet 的装载、初始化(init)、执行(service)以及资源回收。
+    
+      
+
+
+    
+    
+    
+附1：容器
+  容器可以是一个嵌套的关系，大容器内有小容器，小容器内还有更小的容器。
+  好比，整个酒店是一个容器，它包含了各个楼层等设施；每个楼层也是容器，它包含了各个房间；每个房间也是容器，它包含了各种家电等等。
+  来看看容器的抽象基类
+  class org.apache.catalina.core.ContainerBase {
+    HashMap children;                   // 所有子容器
+    LifecycleSupport  lifecycle;        
+    ArrayList listeners;                // 容器的监听端口
+    Loader loader;                      // 载入
+    Container parent;                   // 父容器
+    Pipeline pipeline;                  // 
+    Thread thread;
+  }

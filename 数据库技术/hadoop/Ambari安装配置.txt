@@ -1,0 +1,14 @@
+  http://www.apache.org/dist/incubator/ambari/ambari-1.2.4/ambari-1.2.4-incubating.tar.gz
+  官网: http://ambari.apache.org/
+  官方手册：http://incubator.apache.org/ambari/1.2.4/installing-hadoop-using-ambari/content/index.html
+
+1. 下载安装
+  wget http://www.apache.org/dist/ambari/ambari-1.6.0/ambari-1.6.0.tar.gz
+  tar xfvz ambari-1.6.0.tar.gz
+  cd ambari-1.6.0
+  mvn versions:set -DnewVersion=1.6.0
+  mvn -B clean install package rpm:rpm -DnewVersion=1.6.0 -DskipTests -Dpython.ver="python >= 2.6" 
+
+
+
+

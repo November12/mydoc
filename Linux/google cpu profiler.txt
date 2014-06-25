@@ -1,0 +1,117 @@
+0. 安装
+  wget https://gperftools.googlecode.com/files/gperftools-2.0.tar.gz
+  tar –xzf gperftools-2.0.tar.gz
+  cd gperftools-2.0
+
+  ./configure –enable-frame-pointers        # –enable-frame-pointers选项，必须在程序编译时加上: CCFLAGS=-fno-omit-frame-pointer
+  
+  make && make install
+  
+  
+1. 链接library到应用程序
+  step 1: 修改源代码
+    #include <google/profiler.h>
+    int ProfilerStart(const char* fname);
+    void ProfilerFlush();
+    void ProfilerStop();
+
+    可通过设置环境变量CPUPROFILE_FREQUENCY=x, 来改变采样频率，默认x=1
+
+
+  step 2: 添加编译选项
+    CCFLAGS=-fno-omit-frame-pointer
+    -ltcmalloc_and_profiler
+    
+  
+
+
+2. 运行
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/:`pwd`
+    
+    ./main_dynamic_link                     # 默认安装在/usr/local/lib/
+    
+    result: 127
+    PROFILE: interrupts/evictions/bytes = 5991/3915/188368
+    # 产生性能数据文件: main_dynamic_link_24327.prof
+
+
+3. 分析输出 
+    pprof –text main_dynamic_link main_dynamic_link_24327.prof
+
+    Total: 5991 samples
+    5899 98.5% 98.5% 5899 98.5% loopop
+    53 0.9% 99.3% 53 0.9% memcpy
+    38 0.6% 100.0% 38 0.6% memset
+    1 0.0% 100.0% 1 0.0% _init
+
+    由此证明，Google CPU Profiler支持对动态链接库的性能分析
+    
+4. pprof的几种方式 
+  
+  pprof /bin/ls ls.prof
+    交互式的查看方式
+    
+  pprof --text /bin/ls ls.prof
+    每个函数一行, 之间没有层次关系, 外层函数不累计内层函数的次数, 文字方式显示。非常简单，只能参考。
+
+  pprof --gv /bin/ls ls.prof
+    需要安装dot和gv, 图像式显示
+
+  pprof --gv --focus=Mutex /bin/ls ls.prof
+    Restricts to code paths including a .*Mutex.* entry
+
+  pprof --gv --focus=Mutex --ignore=string /bin/ls ls.prof
+    Code paths including Mutex but not string
+                       
+  pprof --list=getdir /bin/ls ls.prof
+    (Per-line) annotated source listing for getdir()
+
+  pprof --disasm=getdir /bin/ls ls.prof
+    (Per-PC) annotated disassembly for getdir()
+
+  pprof --text localhost:1234
+    Outputs one line per procedure for localhost:1234
+  
+  pprof --callgrind /bin/ls ls.prof
+    需要安装kcachegrind, Outputs the call information in callgrind format
+    
+    
+    
+    
+    
+1. 原理
+
+
+
+2. 选项
+
+
+
+3. 输出视图
+
+
+
+4. 辅助软件安装
+  1. dot
+    Graphviz （Graph Visualization Software的缩写）是一个由AT&T实验室启动的开源工具包，用于绘制DOT语言脚本描述的图形。它也提供了供其它软件使用的库。Graphviz是一个自由软件，其授权为Common Public License。其Mac版本曾经获得2004年的苹果设计奖。Graphviz包括很多命令行工具，dot命令是一个用来将生成的图形转换成多种输出格式的命令行工具，其输出格式包括PostScript，PDF，SVG，PNG，含注解的文本等等。neato命令用于spring model的生成（在Mac OS版本中称为energy minimized）。twopi命令用于放射状图形的生成。circo命令用于圆形图形的生成。fdp命令另一个用于生成无向图的工具。dotty命令一个用于可视化与修改图形的图形用户界面程序。lefty命令是一个可编程的(使用一种被EZ影响的语言[4])控件，它可以显示DOT图形，并允许用户用鼠标在图上执行操作。Lefty可以作为MVC模型的使用图形的GUI程序中的视图部分。 DOT语言是一种文本图形描述语言。它提供了一种简单的描述图形的方法，并且可以为人类和计算机程序所理解。DOT语言文件通常是具有.gv或是.dot的文件扩展名。本文将主要介绍从源代码安装Graphviz工具以及dot命令的使用方式。
+   
+    
+    wget http://www.graphviz.org/pub/graphviz/stable/SOURCES/graphviz-2.30.1.tar.gz
+    tar -zxf graphviz-2.30.1.tar.gz
+    cd graphviz-2.30.1 
+    ./configure
+    make
+    make install
+
+
+
+[root@jfht setup]# 
+--2010-12-12 09:10:26--  http://www.graphviz.org/pub/graphviz/stable/SOURCES/graphviz-2.26.3.tar.gz
+正在解析主机 www.graphviz.org... 192.20.225.20
+Connecting to www.graphviz.org|192.20.225.20|:80... 已连接。
+已发出 HTTP 请求，正在等待回应... 200 OK
+长度：17092429 (16M) [application/x-gzip]
+Saving to: `graphviz-2.26.3.tar.gz'
+
+
+

@@ -1,0 +1,105 @@
+1. 介绍
+  Git是一个开源的分布式版本控制系统，用以有效、高速的处理从很小到非常大的项目版本管理。
+  Git 是 Linus Torvalds 为了帮助管理 Linux 内核开发而开发的一个开放源码的版本控制软件。
+  
+  
+2. 下载和安装
+  tar -xzvf git-1.7.12.4.tar.gz 
+  cd git-1.7.12.4
+  ./configure
+  make
+  make install
+  
+  
+3. Git使用 - 本地操作
+  3.1 设置
+    这些设置是一次性的, 很好理解，就是配置了用户名和邮箱
+    git config --global user.name "your_username"
+    git config --global user.email your_email@domain.com 
+  3.2 创建本地代码库
+    非常简单, 会在当前目录下创建一个.git目录
+    git init 
+  3.3 常用命令
+    git add file                            添加文件
+    git commit -m "initial"                 提交文件
+    git status                              查看当前状态 
+    
+
+4. Git使用 - 分支
+  4.1 创建分支
+    git checkout -b new_world               切换分支(可新建)
+    git branch                              查看所有分支
+  4.2 合并分支
+    git merge new_feature                   将new_feature分支merge到当前分支
+  4.3 丢弃分支
+    ...
+  4.4 删除分支
+    git branch -d new_feature               只能删除已合并的分支
+    git branch -D new_feature               强制删除分支
+  4.5 回滚
+    git log                                 查看提交日志(git没有全局版本的概念，只有ID)
+    git checkout 085bb3bcb                  回退到ID为085bb3bcb开头的版本
+    git checkout -b Version_085 085bb3bcb   通常用这个回退，回退后签出一个新的分支
+    
+    
+5. Git使用 - 远地操作
+  git remote add repo1 https://your_username@bitbucket.org/your_username/name_of_remote_repository.git 
+                                            repo1在这里是任意起的别名，之后可以通过这个别名，操作远程库
+  git push origin master                    推送本地master
+  git clone https://your_username@bitbucket/your_username/name_of_remote_repository.git 
+                                            取得远程拷贝
+  git pull origin master                    只获取最新版本
+  
+  
+6. Git配置
+  6.1 别名
+    git config --global alias.c 'commit -m'          git没有简称，因此别名非常有用
+  
+
+
+
+
+8. Git 和 SVN的区别
+  8.1 GIT是分布式的，SVN不是
+    SVN, CVS都是集中式版本库，使用必须连接到服务器。更新必须手动update
+    GIT从服务器上克隆数据库到本机。可以让你在没有连接网络的情况下commit, 并通过推式更新别人机器上的代码。
+    
+  8.2 .git 和 .svn
+    所有的资源控制系统都是把文件的元信息隐藏在一个类似.svn,.git等的文件夹里。
+    .git把整个数据库都搬了下来，所有体积比.svn大很多。
+    
+  8.3 GIT分支和SVN的分支不同
+    svn中分支就是完全不同的目录。
+    但GIT可以在几个分支中来回切换，非常方便。
+    
+  8.4 GIT没有一个全局的版本号，而SVN有
+    这个全局版本号还是很有意义的，也是我为什么从cvs切换到svn的主要原因
+    
+  8.5 GIT的内容完整性要优于SVN
+    GIT的内容存储使用的是SHA-1哈希算法。
+    当遇到磁盘故障、网络异常等问题时，处理得更好。
+
+    
+9. GIT的优缺点
+  优点：
+    适合分布式开发，强调个体。
+    公共服务器压力和数据量都不会太大。
+    速度快、灵活。
+    任意两个开发者之间可以很容易的解决冲突。
+    离线工作。
+    分支灵活。
+  缺点：
+    没有全局版本的概念。
+    不符合常规思维。
+    
+
+    
+    
+    
+
+  
+附一: 问题日志
+  1) 如果在下载时出现了: SSL certificate problem, verify that the CA cert is OK
+     需添加 export GIT_SSL_NO_VERIFY=true
+  
+  

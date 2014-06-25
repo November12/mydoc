@@ -1,0 +1,45 @@
+【基础】MongoDB 的Capped collections
+
+一、 特性
+想象一下，Capped collections就是一个环形存储区域，永远只会朝着一个方向插入。当整个环都被存储满的时候，新的数据又会在尾部覆盖最老的数据。如此反复。
+
+环形存储不是一个新概念，主要的好处有这样几个:
+1. 一开始，环就是创建好了的，之后不必另行开辟空间，减少了空间申请和释放的开销。
+2. 因为插入的位置只有一个，因此插入效率极高。
+2. 有些业务需要设置一个timeout来表明生存期。如果使用了环形，就可以省去扫描timeout队列带来的开销。
+
+二、约束
+凡事有利则有弊，环形存储也有些约束:
+1. 极高的插入效率带来的问题是不支持delete和update。(delete只有靠覆盖，update即便支持，效率也是极其低下的)
+2. 老的数据会被无情的覆盖，不管它在逻辑层面上是否还有用。
+
+三、Capped collections的特性和约束
+1. 不支持delete。
+2. 不支持update。(其实是支持update的，但update之后的size大小，不能超过之前的size大小。而且update需要index)
+3. 不支持random read。原因同上。
+3. 不支持index。(其实是支持索引的，但会因此将"log speed"变成"database speed"，这样的话，就没意义了)
+4. 不支持Replication。(其实是支持的，但Replication需要_id，Capped collections不会主动创建_id，只能自己手动创建，_id又需要index，。。。)
+5. 不支持sharding。
+
+四、Capped collections使用的场合
+1. logging   MongoDB同步靠的是oplog，oplog其实就是一个Capped collections。日志的用途就很多了，备份、分析、回滚。。。
+2. Cache     FIFO算法的cache可以考虑，LRU的就算了。就算是FIFO算法的Cache，由于读取需要index，Capped collections的优势也被消耗了一大半，只剩下timeout了。
+
+五、Capped collections的用法
+1. 需要我们去显示的创建
+db.createCollection("mycoll", {capped:true, size:100000, max:100});
+size: 总的存储大小
+max:  document数目的上限
+一般情况下，只设置size就可以了。
+
+2. 维护
+db.mycoll.validate()            很详细的Capped collections信息
+db.mycoll.isCapped()            仅仅返回true / false
+
+3. 普通collection转换成Capped
+db.runCommand({"convertToCapped": "mycoll", size: 100000});
+
+六、个人的使用心得
+公司的有些高频数据希望导入MongoDB。由于不需要保存历史记录，一开始想到的就是Capped collections。但导入的时候发现，创建Replication带来的一些麻烦(需要_id); 更关键的是创建了index以后，看不出速度比普通的collection快。
+速度提不上去，还有诸多麻烦和约束，所以还是放弃了。
+看来使用Capped collections，是需要非常注意场合的。

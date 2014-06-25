@@ -1,0 +1,63 @@
+MDS: Metadata server, 关系到元数据的存储方式，很大程度上决定了DFS的架构特点。
+FUSE: Filesystem in Userspace, 用户空间的文件系统，支持FUSE，在接口上将非常方便。
+访问接口: 
+保存方式: 决定了数据的可靠性
+故障恢复: 
+扩展性: 
+开发语言:
+适合场景: 
+
+
+
+
+
+
+
+
+
+
+
+1. Lustre(33,100,000)
+由SUN公司开发和维护。 
+www.lustre.org
+开发语言: c/c++
+特点: 大规模的、安全可靠的，具备高可用性
+
+2. HDFS
+hadoop的dfs，不用细说了
+hadoop.apache.com
+开发语言: java
+特点: 资源耗费有点大
+
+3. MogileFs(287,000)
+
+4. FreeNAS(1,820,000)
+基于FreeBSD操作系统，限制了其使用
+
+5. FastDFS(107,000)
+code.google.com/p/fastdfs
+
+6. NFS
+www.tldp.org/HOWTO/NFS-HOWTO/index.html
+开发语言: c/c++
+
+7. OpenAFS(478,000)
+www.openafs.org
+
+8. MooseFs(59,300)
+derf.homelinux.org
+
+9. pNFS
+www.pnfs.com
+开发语言c/c++
+
+10. googleFs(355,000)
+
+
+
+
+
+
+
+
+

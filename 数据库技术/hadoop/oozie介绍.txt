@@ -1,0 +1,34 @@
+1. 简介
+  Oozie是一种Java Web应用程序，它运行在Java servlet容器(即Tomcat)中，并使用数据库来做自身的存储。
+  
+  需要用Oozie给map-reduce写一个配置文件
+  
+  Oozie可以做到:
+    1. 工作流定义
+    2. 实例的状态
+
+    
+2. 工作流
+  Oozie工作流是放置在DAG(有向无环图)中的一组动作，通过一种叫做hPDL的XML流程定义语言来描述。
+  
+  可以定义以下工作(action):
+    Hadoop map-reduce
+    Hadoop文件系统
+    Pig
+    Java
+    Oozie的子工作流
+    
+  工作完成以后，会触发一个唯一的URL，通知此事。(所以，main函数是Oozie写的)
+  
+
+3. 
+  Workflow Jobs
+    一个完整的DAG的处理，从开始到结束。
+    
+  Coordinator Jobs
+    条件满足时，触发action
+  
+  Bundle Jobs
+    
+  
+  

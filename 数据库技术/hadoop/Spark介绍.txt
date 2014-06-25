@@ -1,0 +1,99 @@
+  关键词: RDD
+
+1. Spark介绍
+  Spark是Hadoop家族的一位新成员，旨在优化现有的MapReduce机制。
+  Spark大量使用内存(cache)来保存中间结果，对于迭代计算、交互式数据挖掘方面，非常有优势。
+  如果不使用cache，而是直接使用磁盘或者和磁盘有数据交互，执行效率还不如Hadoop mr本身。
+
+2. RDD - 弹性分布式数据集
+  这是Spark提出的新概念，很容易理解，甚至你都想过去实现它
+  1) RDD就是一个对象，可以由文件来创建这个对象。
+  2) 这个对象是分布式的哦，还可以进行并行处理。
+  3) 处理时，若机器出现问题，有自我修复的能力。(也就是重新计算)
+  
+3. RDD支持的各种操作
+  Spark中的应用被称为Drivers，这些Drivers实现了各种操作。
+  Driver对数据的处理可分为Transformation和Action两大类:
+  3.1 Transformation - 负责转换生成新RDD
+    map               同hadoop的map
+    filter            过滤elements(exp==true通过)
+    sample            取样
+    groupByKey        
+    reduceByKey 
+    sortByKey
+    flatMap 
+    union             两个rdd求并集(可重复) m + n
+    join              如("a", 1) join ("a", 2) -> ("a", (1, 2))
+    cogroup           类似full join，返回的维度一致。[('a', ([1], [2])), ('b', ([4], []))] (y中没有"b")
+    mapValues 
+    
+  3.2 actions - 对数据集执行计算并把结果返回给Driver
+    collect           以list的形式，返回所有的rdd
+    reduce            同hadoop的reduce
+    count             仅返回list.size()
+    save              保存到hdfs
+    lookupKey
+    
+4. 容错性
+  RDDs会维护血统信息，因为数据丢失后，往往要从input开始，一级一级的恢复。
+  这种恢复方式，比Storm为代表的流式计算，可靠性更高。
+  
+  
+5. Spark Streaming
+  Spark的流不是真正意义上的流，而是将流按照batch size(如1秒)切分成一段一段，每一段就是一个RDD。
+  由于切分的存在，因此只能算是准实时操作。但1秒的间隔，相信绝大多数的应用都是能够接受的。
+  而且批处理的吞吐量会更高。(据说比Storm高2～5倍)
+  
+  5.1 输入接口
+    1) 监控磁盘目录
+    2) 将网络socket作为输入流，支持流行的Kafka、Flume
+
+  5.2 输出接口
+    通常是打印到屏幕，或者输出文件到HDFS
+    
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Spark
+  一个并行计算框架，采用MapReduce模型，由Berkeley开发，适合迭代运算。目前最大规模200台。
+  Spark要运行在Mesos之上。
+  Spark为了弥补Hadoop计算中的一些
+  相比Hadoop:
+    1) Spark提供更多的操作类型, map, filter, flatMap,sample, groupByKey, reduceByKey, union, join, cogroup, mapValues, sort,partionBy ..
+       因此，编程模型比Hadoop更灵活。
+    2) 迭代运算
+      Spark可以进行链式mr计算，这和workflow不同在于，数据处理期间，不会回写到HDFS。(中间数据写入到内存)
+  担忧:
+    容错性
+  RDD - 弹性分布式数据集
+  共享变量：通过广播等方式，可以实现共享变量，累加器等功能。
+  和Storm的比较
+    storm专注于流式计算，spark专注于迭代计算(流式、批处理、机器学习均可)。因此spark应用范围更广一些。
+    Spark的背后是Cloudera，Storm的背后是Hortonwork。
+    Spark更容易融入Hadoop生态圈，Storm显得比较孤独。
+    从社区的活跃度来看，Spark显然比Storm更被看好。
+  
+Shark:
+  即Hive on Spark
+  
+  
+

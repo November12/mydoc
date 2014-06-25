@@ -1,0 +1,6 @@
+Master-Slave，当M宕机后的切换如下：
+1）停止slave的mongod进程
+2）删除slave数据目录下的local.*文件
+3）将原master目录指向slave原数据目录
+4）启动master
+5）启动新的slave

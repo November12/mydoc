@@ -1,0 +1,69 @@
+1. 安装部署
+（1）java环境
+（2）apache-apollo-1.6-unix-distro.tar.gz
+（3）apache-apollo-1.6/bin目录下，执行./apollo create ../../apollo-instance
+（4）apollo-instance/etc目录下，修改apollo.xml
+取消权限控制
+    <!-- Uncomment to disable security for the virtual host -->
+    <!-- <authentication enabled="false"/> -->
+修改webconsole
+    <web_admin bind="http://127.0.0.1:61680"/>
+修改存储文件大小
+    <leveldb_store directory="${apollo.base}/data" log_size="1073741824" />
+修改virtual_host
+    <virtual_host id="apollo-instance" purge_on_startup="false" >
+      <topic id="*" slow_consumer_policy="queue" auto_delete_after="0" >
+        <subscription persistent="true" />
+      </topic>
+
+      <dsub id="*" slow_consumer_policy="queue" auto_delete_after="0" persistent="true" topic="*" />
+
+
+2. 10000topic注册
+使用三个mqconsumer分别用不同的clientid持久化订阅10000个topic，通过！
+
+
+3. 数据吞吐量
+apollo部署在10.15.107.141服务器
+（1）不跨服务器，20个线程，20个topic（每个topic对应3份持久化订阅active，三份都是快consumer），中等数据量
+写入程序与mq在同一台服务器，20线程分别写入不同topic，每个线程写入数据量100000条（单条数据量从1B到10KB，平均长度5KB）
+共10GB，总耗时427.265s，平均每秒23.97MB，平均每秒4681条。数据消化速度与写入速度相当。影响吞吐量因素：CPU
+
+（2）不跨服务器，20个线程，20个topic（每个topic对应3份持久化订阅active，三份都是慢consumer），中等数据量
+写入程序与mq在同一台服务器，20线程分别写入不同topic，每个线程写入数据量100000条（单条数据量从1B到10KB，平均长度5KB）
+共10GB，总耗时1030.232s，平均每秒9.94MB，平均每秒1941条。后期MQ服务器IO升高，数据分发速度降低。影响吞吐量因素：CPU和磁盘IO
+
+（3）不跨服务器，20个线程，20个topic（每个topic对应3份持久化订阅active，两份快consumer, 一份慢consumer），中等数据量
+写入程序与mq在同一台服务器，20线程分别写入不同topic，每个线程写入数据量100000条（单条数据量从1B到10KB，平均长度5KB）
+共10GB，总耗时720s，平均每秒14.2MB，平均每秒2778条。后期MQ服务器IO升高，数据分发速度降低。影响吞吐量因素：CPU和磁盘IO
+
+
+4. 异常处理
+apollo重启后，使用activemq-cpp库的producer和consumer重连都存在问题，需要上层增加代码主动控制。
+
+producer：
+（1）send失败后，需要disconnect，然后间隔一段时间（如1秒）后重试连接；
+（2）重试失败时需要调用cleanup，否则activemq-cpp库中线程不会回收；
+（3）重试连接之间需要一定时间间隔（如1秒），否则会core在activemq-cpp库中；
+
+consumer：
+（1）待研究
+
+5. 存在问题：
+（1）apollo服务重启，会导致数据被清空。设置purge_on_startup=false也无济于事。
+找到原因：paranoid_checks="true"导致，去除这项 就不清数据了。
+
+（2）对failover支持不好，容易引起activemq-cpp的producer出core。
+不使用failover机制，在应用层进行重连控制。
+
+（3）在MQ服务器负载高时，更容易出现producer收不到回应包或者接收超时的情况。
+需要应用层加以控制，进行重连重发。
+
+
+6. 其它
+由于webconsole界面发生变化，mqproxy中的topic订阅模块不再可用。
+
+
+
+
+

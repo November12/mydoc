@@ -1,0 +1,38 @@
+1. 简介
+  JDK(Java Development Kit), 顾名思义，是给开发人员用的。
+  包括运行环境(jre)、基础类库、工具。
+  
+  1.1 JDK的基本组件
+    javac         编译器
+    jar           打包工具
+    javadoc       文档生成器
+    jdb           debugger
+    java          运行java程序
+    appletviewer  小程序浏览器
+    Javah         产生可以调用Java过程的C过程，或建立能被Java程序调用的C过程的头文件。
+    Javap         Java反汇编器
+    Jconsole      Java进行系统调试和监控的工具
+
+
+2. 安装
+  http://www.oracle.com/上下载jdk安装包。(windows是exe文件，linux是gz文件)
+  安装即可! (记住安装的目录，如C:\Program Files\Java\jdk1.7.0_45)
+
+
+3. JDK的环境变量
+windows下打开 我的电脑->属性->高级->环境变量->系统变量->新建
+
+共3个变量
+  java_home         C:\Program Files\Java\jdk1.7.0_45
+  classpath         C:\Program Files\Java\jdk1.7.0_45\jre\lib
+  path              C:\Program Files\Java\jdk1.7.0_45\bin
+  
+linux:
+  export JAVA_HOME=/usr/java/jdk1.7.0_45
+  export CLASSPATH=$CLASSPATH:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
+  export PATH=$JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
+
+  
+4. 验证安装是否成功
+  cmd -> java -version
+  cmd -> javac -version

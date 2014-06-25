@@ -1,0 +1,142 @@
+  严格的说，storm不能算是数据库技术，但通常会将storm和hadoop联系起来，作为hadoop的补充，完成在线分析。
+  个人并不认为storm做得非常好，相信它的继任者一定很快就会出现。
+  但storm的原理，还是值得学习一下的。
+  学习资料: 
+    https://github.com/nathanmarz/storm/wiki/Tutorial   
+    http://storm.incubator.apache.org/documentation/Tutorial.html         -- 如何运行一个简单的例子
+    http://storm.incubator.apache.org/apidocs/                            -- java api
+ 
+1. storm架构介绍
+  1.1 术语
+    master node:  控制节点(1个)
+    worker node:  工作节点(多个)
+    Nimbus:       (master node)上的守护进程(领导只能有一个)
+    Supervisor：  (worker node)上运行的守护进程，管理(启动/关闭)工作进程。
+    Stream:       被处理的数据
+    Spout:        数据源
+    Bolt:         处理过程
+    Task:         一个Spout或Bolt程序(需要一个thread运行)
+    Worker:       Worker是运行这些线程的进程(worker可以管理很多threads)
+    slots:        也就是Worker的监听端口，一个slot对应一个worker(设置配置文件slots数，可以调整workers数)
+    Topology:     由Stream Grouping连接起来的Spout和Bolt节点网络
+    Stream Grouping: Bolt接收什么东西作为输入数据
+
+  1.2 外部组件:
+    Zookeeper:  管理集群中的不同组件
+    0MQ: 内部消息系统
+    JZMQ
+    Java 6
+    Python 2.6.6
+    
+  1.3 非常健壮
+    Nimbus和Supervisor都能快速失败，而且是无状态的。所有状态都保存在ZooKeeper或本地磁盘中。
+    (也就是说，kill -9杀掉Nimbus和Supervisors也没影响)
+    
+    
+2. storm开发
+  2.1 Spout
+    可以通过继承BaseRichSpout, 或直接继承IRichSpout接口实现
+    2.1.1 IComponent
+      public interface IComponent extends Serializable {
+        // 定义Tuple发送流
+        void declareOutputFields(OutputFieldsDeclarer declarer);
+        // 对当前组件的特殊的Configuration配置
+        Map<String, Object> getComponentConfiguration();
+      }
+    2.1.2 ISpout
+      public interface ISpout extends Serializable {
+        // 当一个Task被初始化的时候会调用此open方法。
+        // 通常用于对context, collector初始化。
+        void open(Map conf, TopologyContext context, SpoutOutputCollector collector);
+        // 框架会不断的调用nextTuple()函数，来产生下一个数据。Tuple是Strom里最小的数据单元。
+        public void nextTuple() {
+          _collector.emit(new Values("love"));
+        }
+      }
+    2.1.3 IRichSpout
+      public interface IRichSpout extends ISpout, IComponent {
+      }
+
+  2.2 Bolt
+    可以通过继承BasicRichBolt类或者IRichBolt接口来实现
+    2.2.1 IBolt
+      public interface IBolt extends Serializable {
+        // 初始化task时调用, 通常初始化context, collector
+        void prepare(Map stormConf, TopologyContext context, OutputCollector collector);
+        // 不是说只有execute的时候才能emit的，任何时候，都可以将输出emit，包括cleanup();
+        void execute(Tuple input);
+        void cleanup();
+      }
+    2.2.2 IRichBolt
+      public interface IRichBolt extends IBolt, IComponent {
+      }
+      
+  2.3 OutputCollector
+    SpoutOutputCollector和OutputCollector继承不同的接口，但意义都一样。
+    都是通过emit()函数，将输出的tuple发送出去。
+    
+  2.4 TopologyContext
+    
+  2.5 创建topology
+    TopologyBuilder builder = new TopologyBuilder();
+    // spout和bolt都需要有一个自己的唯一id，前后级关系，都通过此id来描述，如"words","exclaim1","exclaim2"
+    builder.setSpout("words", new TestWordSpout(), 10);
+    // 执行此spout/bolt的task数, worker的负担，是由tasks决定的
+    builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("words");
+    // shuffleGrouping描述输入，可以有多个，如.shuffleGrouping("words).shuffleGrouping("exclaim1")
+    builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("exclaim1");
+
+  2.4 提交topology(local mode)
+    local mode在测试的时候非常有用，而且local mode会把所有的emit打印出来(非常有利于调试)
+
+    Config conf = new Config();
+    conf.setDebug(true);
+    conf.setNumWorkers(2);                                              // topology能够使用的进程数
+
+    LocalCluster cluster = new LocalCluster();                          // 使用 LocalCluster
+    cluster.submitTopology("test", conf, builder.createTopology());     // 使用 submitTopology提交
+    Utils.sleep(10000);
+    cluster.killTopology("test");
+    cluster.shutdown();
+    
+  2.5 提交topology(distributed mode)
+    分布式提交显得非常简单，直接用StormSubmitter即可。没有kill和shutdown。
+    通过storm kill {stormname}，可以杀掉相关topology
+
+    Config conf = new Config();
+    conf.setDebug(true);
+    conf.setNumWorkers(2);
+    
+    StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
+    
+    
+3. storm处理流程
+  3.1 Stream grouping - 路由选择机制
+    ShuffleGrouping：随机选择一个Task来发送。
+    FiledGrouping：  根据Tuple中Fields来做一致性hash，相同hash值的Tuple被发送到相同的Task。 
+    AllGrouping：    广播发送，将每一个Tuple发送到所有的Task。 
+    GlobalGrouping： 所有的Tuple会被发送到某个Bolt中的id最小的那个Task。 
+    NoneGrouping：   不关心Tuple发送给哪个Task来处理，等价于ShuffleGrouping。 
+    DirectGrouping： 直接将Tuple发送到指定的Task来处理。
+    Local or shuffle grouping: 尽量使用相同的worker
+    
+  3.2 storm函数调用流程
+    见图 storm调用流程jpg
+    1) 每个组件(Spout或者Bolt)的构造方法和declareOutputFields方法都只被调用一次。
+    2) open方法、prepare方法在每个executor运行的时候调用一次。相当于一个线程的构造方法。
+    3) nextTuple方法、execute方法是一直被运行的。
+  
+  3.3 ack & fail
+    在一个Tuple被成功处理之后，需要调用ack方法来标记成功，否则调用fail方法标记失败，重新处理这个Tuple。
+
+
+4. 运行
+  编译: 
+    mvn -f pom.xml package
+    
+  运行
+    storm jar all-my-code.jar backtype.storm.MyTopology arg1 arg2
+
+
+    
+ 

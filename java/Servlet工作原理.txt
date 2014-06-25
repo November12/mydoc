@@ -1,0 +1,4 @@
+  Servlet是Java Web技术的核心基础, 
+  
+1. Servlet容器
+  Servlet和Servlet容器相互独立，又彼此依存。

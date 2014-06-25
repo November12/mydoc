@@ -1,0 +1,87 @@
+1. 下载
+  下载之前先看一下 https://hbase.apache.org/book/configuration.html 
+  里面的Table 2.1. Hadoop version support matrix，描述了和Hadoop版本的兼容性。
+  选择适合的版本安装。
+  
+  官网hbase.apache.org/上, 下载压缩包文件，如: hbase-0.94.13.tar.gz
+  
+  
+2. 单机版安装配置
+  2.1 安装
+    tar -xzvf hbase-0.94.18.tar.gz
+    cd hbase-0.94.18
+    
+  2.2 编辑hbase-site.xml
+    <property>
+      <name>hbase.rootdir</name>  
+      <value>/home/hadoop/hadoop/HBase/test</value>  
+    </property>
+
+  2.3 准备环境
+  export HBASE_HOME=/home/hadoop/hadoop/HBase/hbase-0.94.18
+  export PATH=$PATH:$HBASE_HOME/bin
+  
+  2.4 启动
+    start-hbase.sh
+  
+  2.5 shell操作
+    hbase shell
+    shell命令说明，见HBase开发.txt
+    
+  2.6 停止
+    stop-hbase.sh
+    
+    
+3. 集群安装配置
+  3.1 安装前准备
+    NTP: 时钟工具，必须保证所有服务器始终一直，否则会出现奇怪的问题。(时间差超过30000ms，直接启动失败。)
+    设置
+      ulimit -n 65536
+      hadoop soft/hard nproc 32000
+
+  3.2 配置 conf/hbase-env.sh
+    # 必配选项
+    export JAVA_HOME=/usr/lib/jvm/java-6-sun-1.6.0.26
+    # 让hbase能找到hadoop
+    export HBASE_CLASSPATH=/home/hadoop/hadoop/hadoop-1.0.2/conf
+    # 因为使用托管的zk, 所以填false (将zoo.cfg也复制一份，放到HBASE_CLASSPATH路径下)
+    export HBASE_MANAGES_ZK=false
+
+  3.3 配置 conf/hbase-site.xml
+    <configuration>  
+      <property>  
+        <name>hbase.rootdir</name>                        <!-- hbase数据存放的位置, namenode地址 -->
+        <value>hdfs://10.15.62.8:9000/hbase</value>  
+      </property>  
+      <property>  
+        <name>hbase.cluster.distributed</name>            <!-- false是单机模式，true是分布式模式 -->
+        <value>true</value>  
+      </property>  
+    </configuration>
+    具体配置参考 http://yankaycom-wordpress.stor.sinaapp.com/hbase/book.html?q=/wp-content/hbase/book.html
+  
+  3.4 配置 conf/regionservers
+    和编辑hadoop里面的slaves是完全一致的
+    hujj.hadoop.slave1
+    hujj.hadoop.slave2
+    hujj.hadoop.slave3
+
+  3.5 复制hadoop的jar包
+    hadoop相关的包，在hbase的lib目录下，可能会和hadoop版本不一致(这个坑我跳过)
+    将hadoop目录下的相关包拷贝过来。
+    
+  3.6 复制hbase目录到所有slave上
+    
+  3.7 启动/停止hbase
+    bin/start-hbase.sh
+
+  3.8 测试
+    查看jps
+      master上: HMaster
+      slave上:  HRegionServer
+    查看浏览器60010端口
+      http://10.15.62.8:60010/
+      
+    
+    http://www.yankay.com/wp-content/hbase/book.html#hbase_default_configurations
+

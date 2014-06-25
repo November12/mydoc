@@ -1,0 +1,51 @@
+1. http的问题
+  1.1 数据实时性
+    http不维护连接，在实时性要求比较高的场合，比如股票价格等。就显得力不从心了。
+  1.2 单向通信
+    有些业务是必须建立在双向通信之上的，比如网络游戏。
+    虽说可以通过封装，解决这个问题。但毕竟开销大、实时性也不强。
+  1.3 推送 
+    同样，因为是请求/应答模式，推送也不好做。
+    传统的Web实时数据的实现，还是依赖于客户端轮询。带来的问题就不用多说了。
+
+    
+2. Websocket介绍
+  Websocket也是基于tcp的，但却是长连接。
+  tcp连接建立好以后，会使用http的请求头部，进行一次自己的握手操作。详见附1.
+  握手成功以后，就可以全双工的发送基于文本的消息。每条消息以0x00开头，0xff结尾。
+  关闭连接，只需要发送特定的0x8即可。
+  
+  
+3. 对比http的优势
+  数据传输量: websocket一个连接只需要传送一次http头部即可，无论发送数据包的数量有多少。
+  连  接  数：http每次请求都需要一次建立连接、关闭连接，这个开销相当的大。
+              而当并发请求的时候，会创建多个连接，极大的增加的服务器的压力。
+  长  连  接：长连接可以做很多事情，比如推送，而且实时性好太多了。
+  
+
+
+
+  
+  
+  
+附1: websocket握手协议
+  浏览器请求:
+  GET / HTTP/1.1
+  Upgrade: websocket
+  Connection: Upgrade
+  Host: example.com
+  Origin: null
+  Sec-WebSocket-Key: sN9cRrP/n9NdMgdcy2VJFQ==
+  Sec-WebSocket-Version: 13
+
+  服务器回应:
+  HTTP/1.1 101 Switching Protocols
+  Upgrade: websocket
+  Connection: Upgrade
+  Sec-WebSocket-Accept: fFBooB7FAkLlXgRSz0BT3v4hq5s=
+  Sec-WebSocket-Origin: null
+  Sec-WebSocket-Location: ws://example.com/
+
+
+
+

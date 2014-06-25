@@ -1,0 +1,265 @@
+1. Main主函数
+  /* 代码来自于WordCount.java */
+  Job job = new Job(conf, "word count");              // 主函数需要把各块都凝聚在一起，而负责这个任务的，就是Job
+  job.setJarByClass(WordCount.class);                  
+  job.setMapperClass(TokenizerMapper.class);          // 定义Mapper
+  job.setCombinerClass(IntSumReducer.class);          // 定义Combiner，本地聚合
+  job.setReducerClass(IntSumReducer.class);           // 定义Reducer
+  job.setOutputKeyClass(Text.class);                  // 指定map & reduce 输出类型
+  job.setOutputValueClass(IntWritable.class);         // 指定map & reduce 输出类型
+  FileInputFormat.addInputPath(job, new Path(otherArgs[0]));      // 指定输入路径, 是一个文件夹，包含里面所有的文件
+  FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));    // 指定输出路径
+  job.waitForCompletion(true);                        // 执行job
+  
+  hadoop的整个数据流如下:
+    (input)<k1, v1> -> map -> <k2, v2> -> combine -> <k2, v2> -> reduce -> <k3, v3>(output)
+   
+2. 定义Mapper
+  2.1 Mapper接口
+    Mapper<Object, Text, Text, IntWritable> extends JobConfigurable, Closeable
+    Mapper接口是一个泛型类型，有4个形参，分别是: 
+      map函数的输入key, 输入value, 输出key, 输出value  ( <K1, V1, K2, V2> )
+      数据类型LongWritalbe, Text等，来自于org.apache.hadoop.io中，是一套优化了网络系列化传输的基本类型。
+      
+  2.2 map()函数
+    map(Object V2, Text V1, OutputCollector<K2, V2> output, Reporter reporter)
+      output: 输出通过output收集，然后发往reduce
+      Reporter：报告相关的进度，说出你想说的
+    前两个参数是输入的key 和 value
+    
+  2.3 初始化
+    每个InputSplit，开始时都会调用一次JobConfigurable.configure(JobConf)进行初始化
+    
+  2.4 清理
+    每个InputSplit，结束时都会调用一次JCloseable.close()进行清理工作
+    
+  2.5 Map的数目
+    map需要初始化和清理，也是需要有开销的。
+    官方给出的建议是，每个节点大约10到100个map，每个map执行时间 >　1分钟
+
+
+3. 定义Reducer
+  3.1 Reducer接口
+    Reducer<Text, IntWritable, Text, IntWritable>
+    4个形参，分别是输入key, value, 输出key, value
+    输入key-value的类型，要和map的输出相匹配
+    
+  3.2 reduce()函数
+    reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text, IntWritable> output, Reporter reporter);
+    
+  3.3 使用Combiner优化网络
+    Combiner和Reducer干的是同样一件事情，聚合。但Combiner是在本地做的，这样大多数情况下可以减少网络开销。
+    Combiner会执行多次，必须保证执行N次之后，不改变原意。使用不当，可能造成输出数据出错。
+    
+  3.4 初始化
+    JobConfigurable.configure(JobConf)
+    
+  3.5 清理
+    Closeable.close()
+    
+  3.4 Reduce的数目
+    可以通过JobConf.setNumReduceTasks(int)来调节数目
+    还可以通过自定义的Partitioner，控制哪个key被分配给哪个Reducer
+    
+  3.5 神奇的聚合
+    hadoop最神奇的地方，就是mapper吐出的数据，到了reducer之后，变成了按key，按顺序的聚合。
+    顺序可以通过 JobConf.setOutputKeyComparatorClass(Class) 来控制。
+    详见附二
+
+
+4. 定义InputFormat、OutputFormat
+  4.1 InputFormat
+    Mapper的输入需要<k1,v1>，其中k1是文件中的偏移量, v1是具体内容。
+    如何把一个文件，变成<k1,v1>。这就是InputFormat的事情。
+    
+    
+--------------------------------- 分割线 -----------------------------------
+程序已经编写好的，我们再看看，如何测试和调试
+5. Configuration类
+  经常需要将配置信息，传入Configuration。
+  如:
+    <property>
+      <name>user</name>
+      <value>hujj</value>
+      <description>my name</description>
+    </property>
+  可使用conf.addResource("c1.xml")将其导入。addResource()可调用多次，导入多个配置xml文件
+  
+  为了更好的使用配置类，还有一些辅助类提供方便。
+  GenericOptionParser，Tool, ToolRunner，看看ToolRunner的代码就全明白了。
+  
+6. 单元测试
+  也就是测试map()和reduce()
+  很简单，设置一下函数的输入输出就可以了。
+  参数OutputCollector麻烦点，不过也没关系，借助Mockito等工具，轻松搞定。
+  整个单元测试的框架搭建好，之后的单元测试都可以使用，一劳永逸。
+  
+7. 驱动程序
+  可以先在本地环境执行。先不接集群和HDFS
+  如设置 mapred.job.tracker = local
+  或者利用GenericOptionParser 解析 -jt local 和 -fs file:///
+  
+  
+--------------------------------- 分割线 -----------------------------------
+已经可以正式的在集群上运行了
+8. 编译执行
+  8.0 环境准备
+    export HADOOP_HOME=/home/hadoop/hadoop/hadoop-1.0.2/
+    export PATH=$PATH:$HADOOP_HOME/bin
+  
+  8.1 编译
+    程序必须打成JAR包才能上传到服务器。
+    mkdir wordcount_classes
+    javac -classpath ${HADOOP_HOME}/hadoop-core-1.0.2.jar:${HADOOP_HOME}/lib/commons-cli-1.2.jar -d wordcount_classes WordCount.java
+    jar -cvf wordcount.jar -C wordcount_classes/ .
+
+  8.2 执行
+    hadoop jar wordcount.jar org.apache.hadoop.examples.WordCount /hujj/input /hujj/output
+    org.apache.hadoop.examples.WordCount指明类名
+    input目录要准备好，但output目录不要手动生成(运行前，必须保证output目录不存在)
+    job日志，可以查看JobTracker的日志
+    
+  8.3 执行结果
+    /hujj/output/
+      _SUCCESS            成功执行完成的标志
+      _logs/
+      part-r-00000        输出的数据文件，可以发现，里面的数据，是排好序的
+ 
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+附一: 关键类
+// MapContext
+public class MapContext<KEYIN,VALUEIN,KEYOUT,VALUEOUT> 
+  extends TaskInputOutputContext<KEYIN,VALUEIN,KEYOUT,VALUEOUT> {
+  public MapContext(Configuration conf, TaskAttemptID taskid,
+                    RecordReader<KEYIN,VALUEIN> reader,
+                    RecordWriter<KEYOUT,VALUEOUT> writer,
+                    OutputCommitter committer,
+                    StatusReporter reporter,
+                    InputSplit split) {
+    // 扁平化层次关系后的代码, 就是保存传参
+    this.conf = new org.apache.hadoop.mapred.JobConf(conf);
+    this.reader = reader;
+    this.output = writer;
+    this.committer = committer;
+    this.reporter = reporter;
+    this.split = split;
+  }
+  
+  public void write(KEYOUT key, VALUEOUT value) throws IOException, InterruptedException {
+    output.write(key, value);
+  }
+}     
+
+// Mapper
+public class Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {           // package org.apache.hadoop.mapreduce;
+  // 数据流通过Context类，贯穿始终
+  public class Context 
+    extends MapContext<KEYIN,VALUEIN,KEYOUT,VALUEOUT> {
+    public Context(Configuration conf, TaskAttemptID taskid,
+                   RecordReader<KEYIN,VALUEIN> reader,
+                   RecordWriter<KEYOUT,VALUEOUT> writer,
+                   OutputCommitter committer,
+                   StatusReporter reporter,
+                   InputSplit split) throws IOException, InterruptedException {
+      super(conf, taskid, reader, writer, committer, reporter, split);
+    }
+  }
+
+  // 几个空函数，用于重载
+  protected void setup(Context context) throws IOException, InterruptedException { }
+  protected void cleanup(Context context) throws IOException, InterruptedException { } 
+
+  // map()函数, 需要重载
+  // key是文件的行偏移量(即行数), value是行的内容
+  protected void map(KEYIN key, VALUEIN value, Context context) throws IOException, InterruptedException {
+    context.write((KEYOUT) key, (VALUEOUT) value);
+  }
+
+  // 计算引擎
+  public void run(Context context) throws IOException, InterruptedException {
+    setup(context);
+    while (context.nextKeyValue()) {
+      map(context.getCurrentKey(), context.getCurrentValue(), context);
+    }
+    cleanup(context);
+  }
+}
+  
+// Reducer
+public class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT> {
+
+  public class Context 
+    extends ReduceContext<KEYIN,VALUEIN,KEYOUT,VALUEOUT> {
+    public Context(Configuration conf, TaskAttemptID taskid,
+                   RawKeyValueIterator input, 
+                   Counter inputKeyCounter,
+                   Counter inputValueCounter,
+                   RecordWriter<KEYOUT,VALUEOUT> output,
+                   OutputCommitter committer,
+                   StatusReporter reporter,
+                   RawComparator<KEYIN> comparator,
+                   Class<KEYIN> keyClass,
+                   Class<VALUEIN> valueClass
+                   ) throws IOException, InterruptedException {
+      super(conf, taskid, input, inputKeyCounter, inputValueCounter,
+            output, committer, reporter, 
+            comparator, keyClass, valueClass);
+    }
+  }
+
+  // 几个空函数，用于重载
+  protected void setup(Context context) throws IOException, InterruptedException { }
+  protected void cleanup(Context context) throws IOException, InterruptedException { }
+
+  // reduce()函数, 需要重载
+  // 神奇的事情在reduce这里发生了，map出来的一个个结果，已经按照key分类好了，所以value是一个列表
+  protected void reduce(KEYIN key, Iterable<VALUEIN> values, Context context) throws IOException, InterruptedException {
+    for(VALUEIN value: values) {
+      context.write((KEYOUT) key, (VALUEOUT) value);
+    }
+  }
+
+  // 计算引擎
+  public void run(Context context) throws IOException, InterruptedException {
+    setup(context);
+    while (context.nextKey()) {
+      reduce(context.getCurrentKey(), context.getValues(), context);
+    }
+    cleanup(context);
+  }
+}
+
+// JobConf
+JobConf conf = new JobConf(Max.class);        // 
+conf.setJobName("Max T");                     // 任务名称
+FileInputFormat.addInputPath(conf, args[0]);  // 指定输入路径
+FileOutputFormat.setOutputPath(conf, args[1]);// 指定输出路径
+conf.setMapperClass(MaxMapper.class);         // 指定map
+conf.setReducerClass(MaxReducer.class);       // 指定reduce
+conf.setOutputKeyClass(Text.class);           // 指定map & reduce 输出类型
+conf.setOutputValueClass(IntWritable.class);  // 指定map & reduce 输出类型
+
+// Configured
+
+    
+
+    
+
+IsolationRunner
+
+
+优化
+task profiling
+hook
+    

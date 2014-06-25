@@ -1,0 +1,24 @@
+1. 安装
+  官方主页http://ant.apache.org上下载ant，如apache-ant-1.9.2-bin.zip
+  解压缩到某路径，如 F:\apache-ant-1.9.2
+  
+  
+2. 配置环境变量
+  ANT_HOME          F:/apache-ant-1.9.2
+  path              F:/apache-ant-1.9.2/bin
+  classpath         F:/apache-ant-1.9.2/lib
+
+
+3. 验证
+  cmd -> ant -version
+  
+  
+  
+  
+  
+  
+附一: ant介绍
+  和makefile非常相似，必须在执行目录下有一个build.xml的文件。其内容和makefile很相似，只不过用xml格式描述而已。
+  
+    
+  

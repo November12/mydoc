@@ -1,0 +1,163 @@
+1. 安装
+  C语言Api在src/c目录下，执行
+  ./configure
+  make
+  make install
+
+  
+2. 名词解释
+  在开发之前，有必要先熟悉一下zookeeper的一些关键概念
+  *quota(配额): 
+    方便管理员管理, 可以管理的包括namespace和bytes
+  *acl(权限管理)：
+    可以从三个维度来理解：scheme、user、permission，通常表示为scheme:id:permissions
+    scheme:
+      采用哪种方案来进行权限管理，这个是可以扩展的(每种scheme对应于一种ACL机制，可以通过扩展scheme来扩展ACL的机制)
+      zk提供了这样几种默认方案
+      world: 它下面只有一个id, 叫anyone
+      auth:  
+      digest: id为getid(user, passwd)
+      ip:    也可以设置一个ip段
+      super:  超级权限，可以做任何事情
+    id:
+      这里的id并非等同于用户名，具体含义由scheme决定
+    permission:
+      zk支持以下权限, c(create), d(delete), r(read), w(write), a(admin)
+  *watches(观察):
+    这个太重要了，正是有了watches，才成就了zk
+    所有的读操作上，都可以设置watch。(读操作有3类, getData, getChildren, exists)
+    Watch事件类型：
+      ZOO_CREATED_EVENT：    节点创建事件，需要watch一个不存在的节点，当节点被创建时触发，此watch通过zoo_exists()设置
+      ZOO_DELETED_EVENT：    节点删除事件，此watch通过zoo_exists()或zoo_get()设置
+      ZOO_CHANGED_EVENT：    节点数据改变事件，此watch通过zoo_exists()或zoo_get()设置
+      ZOO_CHILD_EVENT：      子节点列表改变事件，此watch通过zoo_get_children()或zoo_get_children2()设置
+      ZOO_SESSION_EVENT：    会话失效事件，客户端与服务端断开或重连时触发
+      ZOO_NOTWATCHING_EVENT：watch移除事件，服务端出于某些原因不再为客户端watch节点时触发
+    有几个特性需要注意:
+      1) 一次性: 注册watches是一次性的，若仍想使用，需要再次注册。
+      2) 保序性: 客户端必然是先收到监控事件，再看到数据变化。
+      3) 通知丢失: 在一些异常情况下，有可能丢失通知。
+  *version
+    
+
+      
+3. c api  
+  所有的api, 均可在c/include/zookeeper.h找到。注释非常规范，可以用doxygen生成帮助文档。
+  api中有一些约定:
+    带a的版本: 
+      代表异步操作，如同步zoo_create(); 异步zoo_acreate();
+    带w的版本: 
+      代表可自定义watch的回调函数，如zoo_get(); zoo_wget();
+    带2的版本：
+      可以多返回一个stat信息
+  详细api列表，详见附二。
+  
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+附一: shell操作
+  ./zkCli.sh -server 10.15.144.71:2181
+  help
+    查看所有命令
+  get path
+    获取节点的详细信息
+  ls path
+    列出所有子节点信息，类似ls
+  ls2 path
+    等同于get & ls信息的总和
+  create path data
+    创建新的节点 (如果已经创建，则报错)
+  set path data
+    修改节点data (若节点不存在，则报错)
+  rmr path
+    删除节点
+    
+  
+附二: C语言API
+  1. zookeeper的句柄操作
+    zookeeper_init();
+    zookeeper_close();
+
+  2. 写操作
+    zoo_create();                 // 创建znode节点
+    zoo_delete();                 // 删除znode节点
+    zoo_set();                    // 设置节点data
+    zoo_set2();                   // 2版本多返回一个stat信息
+    
+  3. 读操作
+    这里的函数都可以设置watch
+    不带w的版本，只能用zookeeper_init()设置的全局监视器回调函数，带w的版本，可以设置自定义的回调函数
+    zoo_exists(); zoo_wexists();
+    zoo_get(); zoo_wget();
+    zoo_get_children(); zoo_wget_children();
+    zoo_get_children2(); zoo_wget_children2();     // 2的版本多返回一个stat信息
+    
+  4. zoo_op_t是各种操作(CREATE, DELETE, SET, CHECK)的union结构，通过这个结构，可以很容易的描述一个操作。
+    zoo_create_op_init();
+    zoo_delete_op_init();
+    zoo_set_op_init();
+    zoo_check_op_init();
+    
+  5. 批处理操作
+    zoo_multi();              // 同时操作多个zoo_op_t结构
+
+  6. 访问、设置节点ACL (当然, 在创建znode的时候，也可以设置ACL)
+    zoo_get_acl();
+    zoo_set_acl();
+
+  7. 触发器
+    zoo_async();                        // 触发器, 在事件完成时触发，可以做些收尾工作
+    zookeeper_interest();
+    zookeeper_process();
+        
+  8. 辅助功能
+    zoo_set_log_stream();               // 设置打印日志位置(默认打印到stderr)
+    zoo_set_debug_level();              // 打印日志的级别
+    zerror();                           // 将err code转换为字符串
+    zoo_state();                        // 获取当前句柄的状态
+    zoo_add_auth();                     // 用于安全认证，添加证书什么的
+    is_unrecoverable();                 // 连接是否为不可恢复的，如果不可恢复，则客户端需要关闭连接，然后重连。
+    zookeeper_get_connected_host();     // 返回当前 Zookeeper 连接的套接字地址
+    zoo_set_watcher();                  // 设置全局的回调函数
+    zoo_get_context();                  // 获取句柄上下文
+    zoo_set_context();                  // 设置句柄上下文
+    zoo_client_id();                    // 获取客户端的 session id
+    zoo_recv_timeout();                 // 返回当前会话的超时时间
+
+  9. 异步操作函数
+    加a的版本，为异步操作的函数, 如同步zoo_create(); 异步zoo_acreate();
+    读写操作都有异步的版本呢，功能和同步完全相同，不再复述了。
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

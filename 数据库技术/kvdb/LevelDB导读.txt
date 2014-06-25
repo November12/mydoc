@@ -1,0 +1,66 @@
+1. 特性
+  对比hash式的kvdb，leveldb可以实现between-and这样的操作。(通过迭代器)
+
+  对于写入，有write batch操作
+  异步操作也是相当安全的，程序崩溃是不会导致丢失数据的。只有系统崩溃(或断电等)才会丢失。
+  利用WriteBatch可以做到批量同步，算得上是对同步写的一种优化。
+  并发: 
+    open()可以防止多进程同时操作一个leveldb。对于多线程，leveldb可以自己搞定。
+    
+2. 性能(可调节的参数)
+  Block size
+    将很多相邻的key存放在一个block并压缩保存，block是存取key的最小单位。默认是4096。
+    < 1K 或者 >1M的block都没有意义。显然这个参数要结合实际应用。
+    
+  Compression
+    建议是使用内置的压缩的。当然也可以禁止掉压缩。
+    
+  Cache
+    磁盘上的数据是压缩过的，cache中的数据是未经压缩的，使用较大的cache肯定可以提高读取性能。(从内存而并非磁盘)
+    在某些应用下，也可以禁止掉cache，减少写入cache的开销。(比如遍历数据的时候)
+    
+  Key Layout
+    因为相近的key会放在一起(block)保存，尽量运用这点。
+    比如一个简单的文件存储如下: 
+        filename -> permission-bits, length, list of file_block_ids
+        file_block_id -> data
+    我们可以在filename前面+'/', 在file_block_id前面 + '0', 将两种数据分离开。
+    
+  open files:
+    leveldb不会释放文件描述符。意味着每个文件都需要一个文件描述符。unimit -n 65536，确保文件描述符完全够用。
+    
+3. 文件(Files)
+    Log files:
+        顺序记录当前的更新的操作(append操作)。当log文件达到一定大小（默认是4M），它将会被重新存储为另一种log格式(SST)
+        同时，log在内存中也会有保存一份(Memtable)
+    
+    SST(Sorted String Table)
+        SST存储在磁盘，而且SST的记录是根据key排好序的.
+        SST中的记录格式是KV
+        SST分为多个级别(这也是为什么叫作level db)。有log转过来的是level-0(默认最多4个)。超过此数目后，level-0会向上合并为level-1。依次类推。
+        其中，level-0会存在重复的key，以上级别不会有此情况。
+        
+    Manifest:
+        记录了每个level下的有哪些SST，相应的key值区间，已经其他元数据.
+        每次重新打开database的时候，都会重新生成一个Manifest
+        
+    Current:
+        Current的用途很简单，记录当前最新的Manifest的名字
+
+    Info logs
+        一些日志信息(最终可能会非常非常大，以至于写入效率变得非常慢，要经常注意一下这个文件)
+
+    Others
+        LOCK, *.dbtmp ...
+
+4. Compaction
+  Compaction的条件：
+    （1）对于level 0，如果总的disk table个数超过一定阈值(默认是4)
+    （2）对于其他level L， 如果disk table的总大小超过一定阈值(对于level 1是10M，level 2是100M，依此类推)
+    （3）如果某个disk table被读取的次数超过了一定阈值(文件大小/16K)，也会对该disk table进行compaction。(当一次Get操作有多个disk table被读取的时候，只有第一个被统计了次数)
+
+  level-0       1MB
+  level-1      10MB(总大小)
+  level-2     100MB(总大小)
+  ...
+

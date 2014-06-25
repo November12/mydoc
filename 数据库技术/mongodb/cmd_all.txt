@@ -1,0 +1,109 @@
+1. Admin Commands
+help                         
+show dbs                                            所有数据库名称及大小(dzhST0  9.94921875GB)
+show collections                                    当前数据库的collection列表
+show users                                          所有用户
+show profile                                        最近的慢查询( 类似 db.system.profile.find() )
+use <db name>                                       选择数据库
+
+db.addUser(username, password)                      添加用户
+db.auth(username, password)                         修改密码
+db.removeUser(username)                             删除用户
+db.logout()                                         注销(退出)
+
+show logs                                           log列表
+show log [name]                                     显示最近的log
+
+db.copyDatabase(fromdb, todb, fromhost)             拷贝一个DB，来源可以是其他机器(拷贝过程中，src/dest都不会被锁住w/r，因此 ... -- db.copyDatabase("dzhST0", "dzhST0", "10.7.3.95:10000")
+db.cloneDatabase(fromhost)                          还是用copyDatabase把
+db.createCollection(name, { size : ..., capped : ..., max : ... } )     创建collection(通常情况下，不需要先创建，除非有特殊参数要指定)
+
+db.getName()                                        获取当前数据库名称
+db.getMongo()                                       当前db连接信息(简单)
+db.getMongo().setSlaveOk()                          设置slaveok
+db.dropDatabase()                                   删除当前数据库(慎用)
+
+db.printCollectionStats()                           查看所有Collection信息
+db.getCollectionNames()                             仅仅是coallection名称
+
+db.currentOp()                                      查看数据库当前进行的操作，
+db.killOp()                                         可通过db.currentOp()查看到的opid, 终止操作
+
+db.getProfilingLevel()                              查看op日志
+db.getProfilingStatus()                             查看op日志(推荐)
+db.setProfilingLevel(level)                         设置记录等级  0=off 1=slow 2=all
+
+db.isMaster()                                       是否master
+db.getReplicationInfo()                             replica set简单的信息
+db.printReplicationInfo()                           oplog相关信息
+db.printSlaveReplicationInfo()                      同上
+db.repairDatabase()                                 在没有journal的情况下，可用此命令修复Db(不正常的数据会丢失)。有journal的情况下，没有必要repair 
+
+db.printShardingStatus()                            sharding状态
+
+db.version()                                        mongodb版本
+
+db.shutdownServer()                                 关闭DB, 需要admin权限(没看出比`kill -2`更好，个人更喜欢用kill的方式)
+
+db.fsyncLock()                                      用于同步
+db.fsyncUnock()                                     用于同步
+
+db.serverStatus()                                   用于诊断
+db.stats()                                          用于诊断
+
+db.getLastError()                                   最后一次操作的错误信息
+db.getLastErrorObj()                                同上，但更详细
+db.getPrevError()
+db.resetError()
+
+db.eval(func, args)                                 自定义的func
+
+
+
+2. collection
+2.1 collection info
+db.foo.count()                                      记录的个数
+db.foo.dataSize()                                   总的数据大小
+db.foo.getDB()                                      所属database名称
+db.foo.storageSize()                                存储空间大小
+db.foo.totalSize()                                  总的大小
+db.foo.stats()                                      包括所有上述信息(全)
+
+2.2 query
+详见 ...
+db.foo.find().help()
+find(), findOne(), findAndModify()
+db.foo.distinct( key )
+
+2.3 insert
+db.foo.save(obj)
+
+2.4 update
+db.foo.update(query, object[, upsert_bool, multi_bool])
+db.analytics.update({"url" : "/blog"}, {"$inc" : {"visits" : 1}}, true)     // upserts
+
+
+
+2.5 remove
+db.foo.remove(query)                            
+db.foo.drop()                                       // 删除整个collection，包括索引等(慎用)
+
+2.6 index
+索引全名是 <collectionnamespace>.$<indexname>
+db.foo.ensureIndex(keypattern,options)              第二个参数可设置的内容很多, name: 名称; unique: 是否唯一; dropDups: 配合unique使用; {$min: -100, $max: 100}: 数据约束; 等等
+db.foo.dropIndex(<name_or_pattern>)
+db.foo.dropIndexes()
+db.foo.reIndex()                                    重建所有索引(一般用不到)
+db.foo.getIndexes()
+
+2.7 map && reduce
+db.foo.group( { key : ..., initial: ..., reduce : ...[, cond: ...] } )
+db.foo.mapReduce( mapFunction , reduceFunction , <optional params> )
+
+2.8 other
+db.foo.renameCollection( newName , <dropTarget> ) renames the collection.
+db.foo.validate(<full>)
+
+        
+        
+        

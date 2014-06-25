@@ -1,0 +1,278 @@
+第二章
+1. java除了基本类型，其他类型都必须先new才能再使用。
+  基本类型有8种:
+    int:       10, 07, 0x1F
+    byte:      127
+    short:     127
+    long:      127l, 127L
+    
+    
+    float:     2.0f, 2.0F
+    double:    1.0d, 1.05D
+    char:      'c', '\u005E', 56
+    boolean:   true, false
+    
+  
+  
+2. 没有赋初始值，无法编译
+    int i;
+    System.out.println("i="+i);  // 编译不通过
+
+    
+3. break可以一次跳出多个循环
+  flag:  
+     for(i = 0;i<9;i++) {
+       for(j = 0;j<8;j++){                     
+         break flag;                  
+       }              
+     }
+     
+4. float类型可以这样求最大最小值
+  min = -1f/0f;  //求最小的单精度数
+  max = 1f/0f;  //求最大的单精度数
+     
+5. java确实不支持无符号数据
+
+
+
+6. 取余符号还可以这么玩
+  5.2%3.1=2.1
+  5.2%-3.1=2.1
+  -5.2%3.1=-2.1
+  -5.2%-3.1=-2.1
+  
+
+第三章
+7. static
+  静态(static)方法，可以调用静态成员，但不能调用普通成员
+  普通方法，则都可以调用。(普通方法可以修改静态成员变量，这和C++不一样，要特别小心)
+
+8. 可以给成员变量赋初始值
+  public class  declareDefault{
+     int defaultVar=10;  //定义一个缺省访问变量
+  }
+  
+9. native
+  从Java 1.1开始，Java Native Interface (JNI)标准成为java平台的一部分，它允许Java代码和其他语言写的代码进行交互。
+  JNI（Java Native Interface）的书写步骤 
+    ·编写带有native声明的方法的java类
+    ·使用javac命令编译所编写的java类
+    ·使用javah ?jni java类名生成扩展名为h的头文件
+    ·使用C/C++（或者其他编程想语言）实现本地方法
+    ·将C/C++编写的文件生成动态连接库
+
+10. java所有的参数传递，都是指针类型(要小心，会改变值的)
+
+
+
+11. Static Block(静态代码块)
+  静态代码块是自动执行的, 在执行main函数之前执行
+  
+  
+
+  
+第四章
+4.1 抽象类(abstract)
+  类似C++的抽象类
+  可以有普通的实例方法: public void instance();
+  可以有普通的静态方法: public static void stFun();
+  当然也有抽象方法：    abstract public  void  absfun();
+
+4.2 接口(interface)
+  相当于C++的纯虚类, 不可以有具体的实现
+  
+  public interface Colorable {
+     int x, y;                    // 接口可以有成员变量
+     void setColor(int color);    // 不必声明为abstract
+     int getColor();
+  }
+  
+4.3 作用域
+  成员变量和成员函数的作用域意义相同
+  private    int priVar = 1;    // 私有
+             int defVar = 2;    // 缺省
+  protected  int proVar = 3;    // 保护
+  public     int pubVar = 4;    // 公共
+  
+  继承:
+    derive extends ancestor;    // derive不能继承私有变量和私有方法
+    class PaintedPoint extends ColoredPoint implements Paintable   /* 接口Paintable中有4个抽象方法，但PaintedPoint只要实现其中的两个，另两个已经由ColoredPoint实现 */
+  
+4.4 多态
+  就把它当做指针就理解了
+  Super s = new Sub();  //定义父类变量，但是指向子类对象
+  
+4.5 final
+  final void  showMsg();   // 最终方法, 不能重载
+  
+4.6 static
+  static int sj = 100;    // 类的静态成员
+  
+4.7 隐藏成员
+  class  Super {
+    protected int var = 200;
+  };
+  class  Sub {
+    public int var = 300;     // 隐藏了父类的成员，连权限也变了, 可用super.var来访问父类的成员(权限只能变得
+  };
+  
+4.8 构造函数
+  比c++的构造函数规则复杂
+  Sub();        // 先调用Super(), 再调用Sub()
+  Sub(int x);   // 先调用Super(int x), 再调用Sub(int x); 不建议这么调用
+  Sub() {       // 先调用Super(int x), 再调用Sub();  调用关系明确，推荐
+    Super(100); 
+  }
+
+4.9 内部类
+  4.9.1 静态内部类
+    static class Inner();
+    只有静态内部类，可以有自己的静态成员变量，静态方法
+
+  4.9.2 成员内部类
+    Outer要访问Inner，必须先创建一个Inner的对象
+    Inner要访问Outer，直接访问即可
+    class Outer
+    { 
+      class Inner 
+      {
+        //内部类成员
+      }
+      //外部类成员
+    }
+  
+  4.9.3 局部内部类
+    private class Inner()
+  
+  4.9.4 匿名内部类
+    很好理解，和C++一致
+    
+    
+第五章 
+5.1 数组
+  定义数组: 
+    type arrayName[];     // 数组的定义中并不为数组元素分配内存
+  
+  数组赋值:
+    String s[] = {"one","two","three","four"};  // 一维数组，并赋初始值
+   或者
+    String s[] = new String[5];                 // 先申请空间
+    s[0] = "one";                               // 再赋值
+  
+  length方法:
+    可调用length方法显示数组的长度
+
+5.2 多维数组
+  int a[][]={{1,2},{3,4,5},{6,7,8,9}}; // 定义
+  int [][] c;                          // c是一个引用
+  c = new int[a.length][];             // 创建数组c
+  for (i=0; i<c.length; i++)           // 创建各个一维数组
+    c[i] = new int[a[i].length];
+
+5.3 StringBuffer && String
+  String不可变对象,一旦被创建,就不能修改它的值.
+  对于已经存在的String对象的修改都是重新创建一个新的对象,然后把新的值保存进去.
+  String是final类,即不能被继承.
+
+  StringBuffer是可变对象
+  它只能通过构造函数来建立, StringBuffer sb = new StringBuffer();
+  不能通过付值符号对他进行付值. sb = "welcome to here!";  //error
+
+  选择错了类型，带来的性能差别，可能会非常大
+
+
+  
+第六章
+6.1 Exception
+
+  try {
+    // 产生异常
+  } catch (Exception e) {
+    // 捕捉异常, 如果没有合适的catch，就由上层try...catch去处理
+  } finally {
+    // 无论执行成功与否，都会执行。
+    // 如果有自己的catch，则先catch, 再finally。如果没有，则先finally，再跳到上层catch
+  } 
+  // 如果被catch了，就会正常执行这里
+
+6.2 MyException
+  
+  MyException extends Exception  // 也可以自定义异常类，继承Exception即可
+  
+6.3 throw
+  throw new Exception();        // 异常也是可以主动抛的
+  
+6.4 throws
+  void CreateException() throws Exception      // 声明一下，我有可能会抛异常的哦。调用这样的函数，必须放在try里面
+  
+
+  
+第七章
+FileInputStream FileOutputStream
+File
+DataInputStream DataOutputStream
+ 
+  
+  
+
+第八章
+8.1 synchronized
+  不可重入，同时只能有一个线程使用
+  public synchronized void accessVal(int newVal);    // 用于方法
+  synchronized(syncObject) { 
+    // 用于程序块, 必须拥有syncObject
+  } 
+
+第九章
+9.1 反射(reflect)
+  JAVA反射机制主要提供了以下功能：
+    1.在运行时判断任意一个对象所属的类
+    2.在运行时构造任意一个类的对象
+    3.在运行时判断任意一个类所具有的成员变量和方法（通过反射甚至可以调用PRivate方法）
+    4.在运行时调用任意一个对象的方法（*****注意：前提都是在运行时，而不是在编译时）
+
+9.2 Class
+  Class是Reflection起源，唯有先生成一个Class的对象，接下来才能经由后者唤起为数十多个的反射API。
+
+  Class c1 = shape.getClass();		                  // 获取shape实际所属的类
+  Class c2 = Class.forName("源程序.第9章.Shape");   // 等同getClass()
+  
+  c.getName();                                      // 获取类名 如: 源程序.第9章.Shape
+  
+
+  
+9.3 Constructor
+  创建一个对象，我们用的是new。但那是编译时期的事情了。
+  运行时如果需要创建一个对象。需要用到Constructor
+  
+  Constructor ct = cls.getConstructor();     
+  Object retobj = ct.newInstance();
+     
+     
+     
+第十章
+10.1 泛型类
+  class superGen <T>                      // 可以是任意类型
+  class Stats<T extends Number>           // 只能是Number或它的子类
+     
+10.2 instanceof
+  一个二元操作符，作用是测试它左边的对象是否是它右边的类的实例(可以是子类)，返回boolean类型
+  
+10.3 泛型方法
+  public static <T> void showGenMsg(T ob, int n)
+  demoGenMethods.<Integer>showGenMsg(k,1);
+  
+10.4 强制类型转换
+  合法的转换可以，不合法的编译都不能通过。
+  
+
+  
+第十一章
+
+     
+     
+     
+     
+     
+     
+     

@@ -1,0 +1,56 @@
+
+  
+  
+winmangager
+1. 介绍
+  一个窗口框架，可以将其他的功能整合到框架中，形成更专业的IDE页面
+
+2. 安装
+  .vim文件，无需安装，下载位置 http://www.vim.org/scripts/script.php?script_id=95
+  
+3. 修改.vim文件
+  有些功能必须修改.vim才行, 打开winmanager.vim:
+  3.1 将插件显示在右侧
+    在function! <SID>StartWindowsManager()函数中修改:
+    " TODO: make this optional later 
+    wincmd H      -> 改为 wincmd L, 
+
+  3.2 进入vim时自动打开winmanager
+    添加
+    "set auto open Winmanager
+    if g:AutoOpenWinManager
+      autocmd VimEnter * nested call s:StartWindowsManager()|1wincmd w
+    endif
+    
+  3.3 退出缓冲区时，自动退出vim
+    打开taglist.vim, 在函数function! s:Tlist_Window_Exit_Only_Window()中，
+    将所有的winbunr(2)改为winbunr(3)
+  
+
+4. .vimrc设置
+  """""""""""""""""""""""""""""""""""""""""""
+  " winmangager设置
+  """""""""""""""""""""""""""""""""""""""""""
+  "设置界面分割 
+  let g:winManagerWindowLayout = "TagList|FileExplorer,BufExplorer"
+  " 设置宽度
+  let g:winManagerWidth = 20          
+  " 绑定F8快捷键
+  nmap <silent> <F8> :WMToggle<cr>
+  " 在进入vim时自动打开winmanager
+  let g:AutoOpenWinManager = 1 
+
+
+
+
+
+Nerd_tree
+1. 介绍
+
+2. 安装
+  .vim文件，无需安装，下载位置 http://www.vim.org/scripts/script.php?script_id=1658
+  
+  
+3. 
+
+

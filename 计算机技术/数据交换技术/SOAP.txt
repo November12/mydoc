@@ -1,0 +1,66 @@
+1. SOAP 简介
+  SOAP：简单对象访问协议, 是一种轻量的、简单的、基于XML的协议，它被设计成在WEB上交换结构化的和固化的信息。
+  简单的说，SOAP就是定义好的XML schemas。再此定义之上，容易实现对象的序列化。
+  实际上，SOAP往往的通过HTTP协议来传送数据。
+  
+  
+2. SOAP 协议详解
+  2.1 SOAP包括4部分:
+    封装(envelop): 从名字envelop可以看出，上面应该写着收信人，寄信人，以及如何处理的必要信息。
+    编码规则(encoding rules): 略
+    RPC表示(RPC representation): RPC调用和应答的协议
+    绑定(binding)：使用底层协议交换信息
+  
+  2.2 SOAP消息
+    SOAP采用了已经广泛使用的两个协议：HTTP和XML。
+    其中HTTP用于实现SOAP的RPC风格的传输，而XML是它的编码模式，一个SOAP请求实际上就是一个HTTP　POST请求。
+    
+    完整的SOAP消息是一个XML文档，包括
+      SOAP封装 (必须)
+      SOAP头   (可选)
+      SOAP体   (必须)
+    <SOAP-ENV:Envelope Attributes> 
+      <SOAP-ENV:header Attributes>
+        ...
+      </SOAP-ENV:header>
+      <SOAP-ENV:body Attributes>
+        ...
+      </SOAP-ENV:body>
+    </SOAP-ENV:Envelope>
+    
+  
+  
+
+3. gsoap
+  gSOAP编译工具提供了一个 SOAP/XML 关于 C/C++ 语言的实现 (http://gsoap2.sourceforge.net/)
+  主要有2个工具和源代码：
+  wsdl2h -o outfile.h infile.wsdl 实现wsdl文件到h文件的数据映射
+  soapcpp2 -c outfile.h生成相应的底层通信stub，strech程序
+  
+  gSOAP 使编写 web 服务的工作最小化
+  gSOAP 编译器生成 SOAP 的代码来序列化或反序列化 C/C++ 的数据结构
+ 
+  
+4. 总结
+  4.1 优点
+    1. SOAP是一种文本协议，与平台无关，与编程语言无关。
+    2. SOAP符合任何路由器、 防火墙或代理服务器的要求。
+    3. 可以将数据结构进行序列化和反序列化。拥有复杂对象序列化捆绑到XML里去的能力。
+    
+  4.2 缺点
+    1. XML已经够冗长的了，SOAP在此基础上还要更冗长
+    2. 在JavaScript中处理SOAP依然很困难。 
+
+  
+  
+  关于RPC和序列化技术(小结)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  

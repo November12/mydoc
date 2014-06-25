@@ -1,0 +1,1 @@
+1. 介绍  和BufExplorer一样，显示tab的软件(在vim里是缓冲区的概念)，但更小巧更可爱，也更像notepad的风格\  只有你希望同时编辑多个文件，就会想它。  2. 安装  .vim文件，无需安装，下载位置 http://www.vim.org/scripts/script.php?script_id=159  简单得连一个doc都没有  3. 使用  跳转到下一个tab         :bn  跳转到上一个tab         :bp  跳转到n号tab            :b<n>   (如b6)  关闭某标签              :bd

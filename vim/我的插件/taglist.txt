@@ -1,0 +1,52 @@
+1. 介绍
+  
+  需要Ctags产生的tags文件配合
+  要使用taglist plugin，必须满足： 
+    1. 打开vim的文件类型自动检测功能：filetype on 
+    2. 系统中装了Exuberant ctags工具，并且taglist plugin能够找到此工具（因为taglist需要调用它来生成tag文件） 
+    3. 你的vim支持system()调用 
+
+
+2. 安装
+  2.1 下载
+    .vim 文件， 下载位置， http://www.vim.org/scripts/script.php?script_id=273
+    unzip taglist_46.zip -d ~/.vim/
+
+3. 设置
+  """""""""""""""""""""""""""""""""""""""""""
+  " taglist设置
+  """""""""""""""""""""""""""""""""""""""""""
+  let Tlist_Show_One_File = 1             " 推荐, 不同时显示多个文件的tag，只显示当前文件的
+  let Tlist_Exit_OnlyWindow = 1           " 推荐, 如果taglist窗口是最后一个窗口，则退出vim
+  let Tlist_Use_Right_Window = 1          " 推荐, 在右侧窗口中显示taglist窗口
+  let let Tlist_Auto_Open = 1             " 推荐, 启动VIM后，自动打开taglist窗口
+  let Tlist_WinWidth = 20                 " 推荐, 用Tlist_WinHeight还可以设置高度
+  nnoremap <silent> <F8> :TlistToggle<CR> " 设置快捷键<F8>
+  
+  " 以下不推荐使用
+  map <silent> <leader>tl :TlistToggle<cr>  ” 开关taglist
+  let Tlist_Sort_Type = 1                 " 不推荐，按名字排序，而不是在文件中出现的顺序排序
+  let Tlist_File_Fold_Auto_Close = 1      " 其它的tag折叠而不是关闭
+  let Tlist_Close_On_Select = 1           " 选择了tag后自动关闭taglist窗口
+  let Tlist_Use_Horiz_Window = 1          " 横向显示taglist窗口
+  let Tlist_GainFocus_On_ToggleOpen = 1   " 使用:TlistToggle打开taglist窗口时, 焦点在taglist窗口
+  Tlist_Process_File_Always = 1           " 始终解析文件中的tag, 即使没有打开taglist窗口
+  
+  
+  
+4. 操作
+  <F1>          显示帮助 
+  <Space>       显示光标下tag的原型定义
+  o             在一个新打开的窗口中显示光标下tag
+  u             更新taglist窗口中的tag
+  s             更改排序方式，在按名字排序和按出现顺序排序间切换
+  d             删除当前tag
+  x             taglist窗口放大和缩小，方便查看较长的tag
+  -             将tag折叠起来
+  +             打开一个折叠
+  =             将所有tag折叠起来
+  *             打开所有的折叠
+  [[            跳到前一个文件
+  ]]            跳到后一个文件
+  q             关闭taglist窗口
+

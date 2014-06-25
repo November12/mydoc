@@ -1,0 +1,68 @@
+依赖:
+	LUA 				http://lua.org
+	LibEvent 	  http://monkey.org/~provos/libevent/
+  
+1. mysql proxy介绍
+  
+
+  
+  mysql replication
+  主从模式
+  binlog
+  
+  主库也可以选择，只写binlog，不写库
+  
+  Mysql transfer只支持row format
+  
+  
+mysql proxy自身不带任何额外功能, 所有的管理功能均需要通过lua script进行开发获得。
+
+mysql proxy(MP)主要是一个连接池。当然，作为一个连接池，它可以做很多的事情。
+连接池可以做一些什么事情呢? 监控连接、监控查询、路由(故障切换、负载均衡)
+
+
+作为一个连接池，MP采用的是mysql协议，对于用户来说，是透明的。
+
+配置:
+  auth_host = {                 # 前端均为内网服务器，通过IP授权即可，无需用户名/密码登陆
+    "10.15.2.1",
+    "10.15.2.2",
+    "10.15.2.3",
+    "10.15.2.4",
+    "10.15.2.5"
+  }
+  
+  # 所有的mysql，要使用同样的配置
+  backend_user = "user"
+  backend_pass = "password"
+  backend_default_db=”dzhst2”
+  backend_charset=33
+  backend_max_packet_size=1*1024*1024
+  backend_capabilities= 8+512+32768
+  
+  server_groups = {
+    ["server_group_A"] = {
+      {	
+				ip="10.15.1.1",
+				port=33061,
+				failover=0
+			}
+    }
+    ["server_group_B"] = {
+      ...
+    }
+  }
+  
+  user_groups = {
+    ["user_group_A"] = {
+      server_group="server_group_B"
+      default_db=”dzhst”
+    }
+    ["user_group_B"] = {
+      server_group="server_group_A",
+    　default_db=”dzhst2”
+    }
+	}
+
+  
+  

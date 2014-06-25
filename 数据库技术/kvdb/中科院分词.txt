@@ -1,0 +1,70 @@
+1. 介绍
+主页: http://ictclas.org/index.html
+每个词都可以有词性
+
+2. 数据结构
+很简单，只有两个
+2.1 字符编码类型
+  如何解释字符串，这点做得非常好，很多词库都固定死了编码格式
+  enum eCodeType {
+    CODE_TYPE_UNKNOWN,  //type unknown
+    CODE_TYPE_ASCII,    //ASCII
+    CODE_TYPE_GB,       //GB2312,GBK,GB10380
+    CODE_TYPE_UTF8,     //UTF-8
+    CODE_TYPE_BIG5      //BIG5
+  };
+  中文分词，有这些编码已经是足够了
+
+2.2 字符串结果
+  #pragma pack(1) 
+  struct tagICTCLAS_Result{
+    int iStartPos;  //开始位置
+    int iLength;    //长度
+    char szPOS[POS_SIZE]; //词性
+    int	iPOS;       //词性ID
+    int iWordID;    //词ID
+    int iWordType;  //词语类型，用户词汇？(0-否,1-是)
+    int iWeight;    // 词语权重
+  };
+  #pragma pack()
+  
+3. 接口
+ICTCLAS50.h包含所有的接口, 以及完善的注释说明
+
+3.1 ICTCLAS_Init()
+初始化的工作，估计会初始化很多全局变量。需要一个参数pszInitDir, 指明配置文件的路径。
+此函数必须第一个被调用
+
+3.2 ICTCLAS_Exit()
+和ICTCLAS_Init()配对，释放资源
+
+3.3 ICTCLAS_ImportUserDictFile()
+导入用户词典，要指明词典编码格式
+
+3.4 ICTCLAS_ImportUserDict()
+也是导入用户词典，输入参数是buffer而不是文件名
+
+3.5 ICTCLAS_SaveTheUsrDic()
+导入词典实质是导入到内存，需要调用此函数保存到磁盘
+
+3.6 ICTCLAS_ParagraphProcess()
+最重要的函数，分词。 
+
+3.7 ICTCLAS_ParagraphProcessA()
+无需开辟分词空间，自动分配空间, 带来的问题是，需要用ICTCLAS_ResultFree()在释放空间
+
+3.8 ICTCLAS_ResultFree()
+和ICTCLAS_ParagraphProcessA()配合使用
+
+3.9 ICTCLAS_FileProcess()
+对文件进行分词
+
+3.10 ICTCLAS_ParagraphProcessAW()
+不需要申请空间，也不需要释放空间，也不知怎么实现的 
+
+
+
+
+
+
+

@@ -1,0 +1,9 @@
+AMQP模型
+  一个处理链:
+  exchange: 接收消息，并按照一定的规则路由到"队列"
+  message queue: 存储消息
+  binding： 定义了exchange和message queue之间的关联，提供路由规则
+  
+AMQP协议
+  
+  

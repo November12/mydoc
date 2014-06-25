@@ -1,0 +1,300 @@
+参考文献: Core+Java
+
+1. java的起源
+  1.1 认识java
+    一般认为: B语言 -> C语言 -> C++语言 -> Java语言
+    Java的语法是从C语言继承的，而面向对象的特性又受到了C++的影响。
+    尽管Java受到了C/C++的影响，但它并不是C++的增强版。Java也不是用来取代C++的，两者将长期共存。
+
+  1.2 java对internet的影响
+    Internet使java变成网络最流行的语言，同时java对Internet的影响也意义深远。
+    java可以生成两类型的程序: 应用程序(Application)和Java applet(小应用程序)
+    Application和C++类似，但applet使得程序可以在网络上传输和实行，大家在浏览器里看到的内容，不再是静态的了。(asp还是静态的，只不过在服务器端动态生成而已)
+
+  1.3 applet
+    程序需要在网络中传输，必须要解决两个棘手的问题: 安全性和移植性
+    安全性:
+    applet被限制在java运行环境中执行，不允许访问计算机的其他部分。
+
+    可移植性:
+    同样，也是利用了java的运行环境。
+
+  1.4 java运行环境
+    这是java和C++最大的不同，这个特性也决定了两者之间的特性，用途互不冲突。
+    为了运行在这个环境，也不得不做出一定的牺牲，那就是java必须变成一种解释型的语言，而不是像C++那样的编译型。
+    虽说是解释型，但java在这方面做得非常好。
+    首先java编译器将代码生成为字节码(bytecode)，在使用时，通过一个字节码编译器，根据需要，一部分一部分的编译成可执行程序。
+    为什么不加载的时候就都编译好呢? 因为java要做很多的实时性检查，在安全性方面，java就好太多了。
+
+  1.5 java的特性
+    为什么有了C++，还需要java，这里来回答这个问题。
+
+    1.5.1. 简单(Simple)
+      java里面不会出现那些复杂的，易混淆的高级技巧。C++里面的一些精辟的使用方法，在java里要么放弃，要么换一种易理解、易使用的方式来实现。
+      当然了，这也意味着无法享受C++程序员的一些编码乐趣。对于初学者而言，还是学习C++比较好。
+
+    1.5.2. 面向对象
+      在面向对象方面，java执着但不偏激，比如所有的代码都必须是面向对象，但基础类型，比如整型就不是对象。
+      在这方面，java的平衡还是很好的。
+
+    1.5.3. 健壮
+      java是在互联网应用上发展壮大的，程序需要在互联网上传递和运行，健壮性显然比性能更重要。
+      java有C++无法比拟的运行时类型检查，健壮性不言而喻。
+
+    1.5.4. 多线程
+      还是为了互联网上的交互应用，多线程是必须的。
+
+    1.5.5. 结构中立
+      通过JVM(java virtual machine)，java程序可以运行在任何平台上。
+
+    1.5.6. 高效的解释型语言
+      虽然是解释型语言，但java经过精心设计，通过JIT(just in time)实现了高效运行。解除了开发者在性能方面的担忧。
+
+    1.5.7. 分布式
+      java内嵌了RMI(remote method invocation)，不同机器之间的对象存取，函数调用，变得异常方便。
+
+    把上面的归纳总结一下，就是java简单，可用，安全，可移植。
+    这些特性决定了java在互联网应用上不可取代的地位。
+
+2. java语言概述
+  2.1 8种简单数据类型 
+    整型: byte(1), short(2), int(32), long(64)
+    浮点型: float, double
+    其它: char(2), boolean
+
+    java没有无符号类型
+    java的char是unicode，16位
+    java是不可能支持指针操作的，不这样的话，applet很容易突破java运行环境的限制。
+
+3. 类与对象
+  3.1 声明一个对象
+    java在声明对象时和C++不同，方式有点像C++的指针
+    A a;          // C++: A *a;
+    a = new A();  // C++: a = new A();
+    A b = a;      // C++: A *b = a;
+
+  3.2 this关键字
+    和C++一样
+    this.size;    // C++: this->size;
+
+  3.3 finalize()方法
+    类似C++的析构函数，当然了，析构函数是在退出作用域的时候执行的，finalize()则不同。
+    实际上,java很少有用到finalize()的时候
+
+  3.4 static关键字
+    和C++一致
+
+  3.5 final关键字
+    类似C++的const, 只能在声明时初始化
+
+  3.6 嵌套类(内部类)
+    如果类B定义在类A之内，那么B被A所知，但不被外面所知。B可以调用A的任何成员，包括private
+
+4. 继承
+  4.1 extends关键字
+    继承一个类是用extends, 相当于C++的public
+    java只允许继承于一个类，即没有多重继承。
+    java是不需要virtual这个关键字的，因为所有的函数默认都是virtual
+
+  4.2 super关键字
+    两个作用，一个是在构造函数里面，用于给父类初始化。
+    另一个是调用隐藏的父类变量。
+
+    在调用构造函数方面，java和C++一样，需要首先调用父类的构造函数，但java是通过super来描述的，而且super只能放在最前面。
+
+  4.3 抽象类(abstract)
+    只有抽象类才能定义抽象的方法，类和抽象方法前，都要加上abstract关键字。
+
+  4.4 final关键字
+    final有三个作用:
+    第一个已经在前面讲了，作为声明常量。
+    下面两个都与继承有关:
+    一个是阻止重载(用在方法前)，另一个是阻止继承(用在类前)
+
+    final的作用就像它名字一样，到此为止了，不在引申了。
+    C++是没有阻止重载和继承的，可见java的约束随处可见。
+
+  4.5 Object类
+    所有类的基类，由于java只能单继承。因此，所有的类可以组成一棵树，而Object类就是这棵树的根节点。
+
+5. 包和接口
+  5.1 包
+    包是用来解决命名空间问题的，这个和C++的namespace意义一样。
+    但java的包要严格得多。java的包要和目录绑定在一起，也就是说，a.b.c，必须放在a/b/c.java。而C++的namespace，更多的是一个虚拟的概念。
+
+  5.2 访问保护
+    java中类的可见度有5个等级:
+      同一个类
+      相同包中的子类
+      相同包中的非子类
+      不同包中的子类
+      不同包中的非子类
+
+    访问权限有4种:
+      private： 仅在同一个类中可见
+      public: 所有都可见
+      默认: 同一个包可见
+      protected: 仅最后一个等级不可见
+
+  5.3 import关键字
+    有些像C++的using namespace
+    例如: import java.util.*;
+          import java.util.Date;
+        
+  5.4 interface关键字
+    接口类似于C++的纯虚类, C++继承的时候，是不区分父类和接口的。
+    而java是单继承(extends)、多接口(implements)的。java的这种继承方法，在设计时给予了一定的约束，使得结构变得非常清晰。
+
+6. 异常处理
+  C++的程序员往往喜欢用if来处理异常(C风格)，但java世界了,try .. catch是唯一的选择。
+  int i = 5 / 0; 这句话C++一定会崩溃，但java，即使没有try，也会抛出异常，因为整个main都在默认的try .. catch当中。
+  java通过5个关键字控制异常处理: try, catch, throw, throws, finally
+  java同时也内置了许多默认的异常类
+
+7. 多线程编程
+  C/C++的多线程编程是依赖于OS的，而java程序是运行在jvm上的，jvm是用C编写，并实现了线程池。
+  所以, C/C++上经常会创建线程池来减少线程创建销毁的开销，java则没有这个必要。
+
+8. 输出输出
+  java程序，特别是applet，主要目的就是为了和用户进行交互的。文字显示的机会对于java来说非常少。更多的是基于AWT(Abstract Windowing Toolkit)的绘图。
+  ...
+
+
+二、java库
+1. String & StringBuffer
+  String是固定长度的，值不能被修改。
+  StringBuffer是可变长度。
+
+2. java.lang
+  java.lang被自动导入，它是java最广泛使用的包。
+
+3. java.util
+  类似STL，包括容器等实用工具。
+
+4. java.io
+  输入输出
+
+5. java.net
+  网络编程，和C++直接使用socket函数不一样，java将其都封装好了，使用起来非常方便。
+
+三. Applet编程
+1. java.applet
+  java之所以吸引人，正是由于applet。
+  Applet类提供了对小应用程序必不可少的支持。
+
+2. applet介绍
+  所有的小应用程序，都是Applet类的子类。
+  小应用程序不是在jvm上执行的，而且在web浏览器或者专用阅读器中执行的。
+  applet的启动、控制机制完全不同，不是从main()开始的。
+  applet经过编译后，包含在html里面，用 applet标记。
+  applet的输出也不是由println()完成的，而是由各种不同的AWT方法来实现的。
+
+3. Applet的主框架
+  // An Applet skeleton
+  import java.awt.*;
+  import java.applet.*;
+
+  /*
+  <applet code="AppletSkel" width=300 height=100>
+  </applet>
+  */
+
+  public class AppletSkel extends Applet {
+    public void init() {
+      // initialization
+    }
+
+    public void start() {
+      // start or resume execution
+    }
+    
+    public void stop() {
+      // suspends execution
+    }
+    
+    public void destory() {
+      // perform shutdown activities
+    }
+    
+    public void paint() {
+      // redisplay contents of window
+    }
+  }
+
+  执行顺序: init(), start(), paint()
+  终止顺序: stop(), destroy()
+
+  update()方法
+  先用默认的背景颜色填充窗口，再调用paint()方法。
+
+4. AWT
+  再次介绍一下AWT, Abstract Windowing Toolkit, 抽象窗口工具包
+  AWT类，在java.awt包中，也是java最大的包之一，AWT的操作太丰富了，算得上是UI编程的一个分支了。
+  AWT并不一定要用在applet上面，但主要用途就是applet
+
+  awt包中的类有层级关系的，如果了解MFC，对这种层次关系并不会陌生。
+
+  4.1 Component类(组件)
+  封装了一个可视主件的所有属性的抽象类。
+
+  4.2 Container类(容器)
+  看字面意思基本就知道了，是用来包容其他Component对象的类。
+
+  4.3 Panel类(面板)
+  并没有提供新的方法，只是一个Container的具体实现
+
+  4.4 Window类(窗口)
+  一般不会使用这个类，而是使用它的子类Frame
+
+  4.5 Frame类(框架)
+  创建一个通用的窗口。包括标题栏、菜单栏等等。
+
+四、java软件开发技术
+0. jar
+  C++的程序，是编译成了exe, dll等二进制形式来发布的。但java不行，别忘了，java是解释型的，运行时需要源代码(.class)才行。
+  把一大堆源代码直接给用户肯定会被骂死的，而且还会有安全等方面的问题。为了做到像C++那样方便，于是jar出现了。
+  java archive, java归档文件。与平台无关的格式，允许将许多文件组合成一个压缩文件。
+  jar是以zip格式为基础的，但除了压缩和发布以外，jar还用于部署、封装(组件、插件)，可被编译器和jvm这样的工具直接使用。
+
+1. Java Beans
+  在设计硬件的时候，不需要去设计电阻、电容、一些计算单元。只需要根据规格说明，直接去用就可以了。
+  这是因为硬件领域，已经有了很成熟的组件体系。
+  但是在软件上面，一直没有这样的体系。Java Beans就是冲着这个目标来的。
+  对于其他的开发者，可以像硬件工程师那样，在JSP页面、Servlet、其他JavaBean、applet程序里使用Bean。
+
+2. Swing
+  AWT的替代产品，提供了更丰富的特性，Swing的组件没有与平台相关的代码，是纯java代码。
+
+五、流行的java框架
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+附1: 缩写
+1. JRE(Java Runtime Environment，Java运行环境)
+  运行JAVA程序所必须的环境的集合，包含JVM标准实现及Java核心类库。
+  
+2. JVM(Java Virtual Machine，Java虚拟机)
+  Java很多的特性，都是依靠JVM来实现的。
+
+3. GC(垃圾回收机制)
+  有3种垃圾回收机制:
+    单线程回收: 
+    多线程回收: 
+    部分线程回收，部分线程运行: 不阻塞，但会影响回收效率
+    
+

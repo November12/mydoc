@@ -1,0 +1,101 @@
+1. overview
+  1.1 启动replica Sets
+    mongod --replSet setname --rest
+    同一时间，只有一台可写 (基于atomic operations的考虑)
+
+  1.2 replication模型
+    Master-Slave: 简单，出错可能性小
+    Replica Sets: 和M/S相比，有更为完整的代码，和更强的功能(功能上M/S只是其子集)
+
+
+2. 配置:
+  参照: http://www.mongodb.org/display/DOCS/Replica+Sets+slaveDelay
+  rs.conf()
+  {
+    _id : <setname>,                              // mongod中的setname 
+    members: [                                    // set的所有成员
+      {
+        _id : <ordinal>,                          // 从0开始的序号，不会被reuse (当机器恢复运行时有意义)
+        host : <hostname[:port]>                  // host : port
+        [, arbiterOnly : true]                    // 默认为false, 作为arbiter时设置为true
+        [, buildIndexes : <bool>]                 // 默认为true, 作为backup时设置为false (不建secondary indexes)
+        [, hidden : true]                         // 默认为false, 不做主机时设置为true
+        [, priority: <priority>]                  // 默认为1, 越大的值，越有可能成为priority. 设置arbiter, backup, hidden时，要将其置为0. (可利用此特性，设置不同的priority值，以达到强制切换primary)
+        [, tags: {loc1 : desc1, loc2 : desc2, ..., locN : descN}]    // 
+        [, slaveDelay : <n>]                      // 默认是0, 单位是秒; 延迟备机(用于rollback)
+        [, votes : <n>]                           // 默认是1，选举时占有的票数
+      }
+      , ...
+    ],
+    [settings: {
+      [getLastErrorDefaults: <lasterrdefaults>]            // 
+      [, getLastErrorModes : <modes>]
+    }]
+  }
+
+  > cfg = {
+  ... _id : "acme_a",
+  ... members : [
+  ... { _id : 0, host : "sf1.acme.com" },
+  ... { _id : 1, host : "sf2.acme.com" },
+  ... { _id : 2, host : "sf3.acme.com" } ]
+  }
+  > rs.initiate(cfg)
+  > rs.status()
+  
+  可用如下方式修改配置:
+    > config=rs.conf()
+    > config.members[1].priority=2
+    > rs.reconfig(config)
+    
+  在新做replica的时候，primary可以有数据，但是secondary绝对不能有数据，否则新建将失败。但是在添加secondary节点的时候，可以有数据。这样的话，在考虑迁移的时候必须要有注意。
+
+
+3. oplog
+  Replication是通过oplog(operation log)来实现异步写操作的。
+
+  oplog是一个capped collection, 因此，collection size非常重要，决定了今后多少数据可以恢复(设置小了，slave可能丢失数据)
+    M/S中是          oplog.$main
+    replica sets中是 oplog.rs
+
+  如果因为oplog过小，或者slave停机时间过长，导致slave无法catch up，可以通过completely resync来解决(拷贝一份当然也可以，但需要停掉master)
+
+
+4. Rollbacks 
+  当数据冲突的时候，就会启动Rollbacks机制。
+    举个例子:
+      A(master), B启动: insert(1);        // A: 1,   B: 1
+      关闭B: insert(2);                   // A: 1,2  B: 1    
+      关闭A,再启动B: insert(3);           // A: 1,2  B: 1,3
+      启动A: 如果A是master, rollback 2, 再同步3     // A: 1,3  B: 1,3
+             如果B是master, rollback 3, 再同步2     // A: 1,2  B: 1,2
+    无论如何，数据总会被丢失。虽然可以通过data/rollback目录下的bosn文件恢复数据，但恢复非常困难。
+
+    
+5. database 'local'
+  system.replset - replica sets的配置
+  oplog.rs       - oplog的具体内容 
+  replset.minvalid - 查看同步的状态(为空，代表全部同步)
+
+  slaves  - M/S中查询slaves
+  sources - M/S中查询master
+
+
+6. Voting 
+  当Priority宕掉以后，需要选举另一个Priority. 规则如下:
+    1. 所有机器都有选举权
+    2. 必须由奇数个机器选举，并获得大于(>)1/2的选票。(可由Abiter凑成奇数)
+    3. 每台机器维护一个与其它机器连接的心跳包，这个心跳包作为选举时的依据
+    4. 对于priority:0的机器有选举权，但不是后选者(多种方法可以设置priority属性)，up-to-date的机器最有可能获选
+
+
+7. 添加/删除节点
+  rs.add("broadway:27017")
+  rs.remove("127.0.0.1:27020")
+
+
+8. server state
+  ["STARTUP", "PRIMARY", "SECONDARY", "RECOVERING", "FATAL","STARTUP2", "UNKNOWN", "ARBITER", "DOWN", "ROLLBACK"]
+  
+
+ 

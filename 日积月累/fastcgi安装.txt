@@ -1,0 +1,28 @@
+0. FastCGI介绍
+FastCGI 像是一个常驻 (long-live) 型的 CGI，它可以一直执行着，只要激活后，不会每次都要花费时间去 fork 一次 (这是 CGI 最为人诟病的 fork-and-execute 模式)。
+FastCGI 支持 C/C++、Java、PHP、Python、Ruby、Perl，Tcl 等程序语言。
+FastCGI 的应用程序亦兼容于 CGI。即 FastCGI 的应用程序也可以当成 CGI 来执行。
+现有的 CGI 程序要改写成 FastCGI 非常简单，最少可能只需要多加入三行程序代码。
+FastCGI 支授分布式运算 (distributed computing)，即 FastCGI 程序可以在网站服务器以外的主机上执行并且接受来自其它网站服务器来的请求。
+
+1. 官网去下载php源代码
+www.php.net/
+php-5.3.18.tar.gz - 一定要是PHP 5.3.2以后版本，因为后面用到了PHP-FPM
+
+2. 安装
+#tar -xzvf php-5.3.18.tar.gz
+#cd php-5.3.18
+#./configure -prefix=/usr/local/php -with-config-file-path=/usr/local/php/etc -with-iconv-dir=/usr/local -with-freetype-dir -with-jpeg-dir -with-png-dir -with-zlib -with-libxml-dir=/usr -enable-xml -disable-rpath -enable-discard-path -enable-safe-mode -enable-bcmath -enable-shmop -enable-sysvsem -enable-inline-optimization -with-curl -with-curlwrappers -enable-mbregex  -enable-fpm  -enable-sockets
+#make
+#make install
+
+3. 运行php-fpm
+#cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+#cp /opt/php-5.3.18/sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm
+#chmod +x /etc/init.d/php-fpm
+#chkconfig --add php-fpm
+#chkconfig --level 35 php-fpm on
+#/etc/init.d/php-fpm start
+
+
+

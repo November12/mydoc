@@ -1,0 +1,130 @@
+Hadoop IO是完整的解决方案，不仅可以了解hadoop IO，更可以了解IO需要注意的方方面面。
+
+1. 数据完整性
+  HDFS会对所有写入的数据计算校验和，并在读取数据时检验校验和。检验方法为CRC-32。
+  检验的数据大小为io.bytes.per.checksum/512, 所以存储开销低于1% (通常的标准就是1%)
+  写入数据时，由datanode负责计算并存储校验和。
+  读取时，由客户端负责校验，并将校验信息返回给datanode。
+  同时，datanode自身还有个线程，定期扫描block块，确保数据的完整性。
+  如果发现某block损坏，datanode则通知namenode。namenode将其置为损坏，并复制新的副本到其它namenode。
+  所以，hadoop的数据完整性，是非常健壮的。
+  
+
+2. 压缩
+  压缩可以减少磁盘的存储空间，而且可以减少网络流量。在CPU足够强大的今天，压缩已必不可少。
+  压缩是时间换空间的方法，好的压缩，压缩耗时要短，压缩比率要高。但这两个因素又往往矛盾，于是就有了多种压缩算法并存的局面。
+  时间上看，依次为(优->劣):  LZO  gzip  bzip2
+  空间上看，依次为        :  bzip2 gzip LZO  
+  按照中庸的观点，往往采用gzip
+  
+  2.1 CompressionCodec接口
+    所有的压缩类，必须实现CompressionCodec接口。
+    使用压缩类非常简单，和使用普通的stream没有区别。
+  
+  2.2 CompressionCodecFactory
+    读取压缩文件时，完全是通过后缀名来判断压缩方式的。
+    通过工厂类，CompressionCodecFactory，可以简单的生成一个解压缩对象。
+    所有的压缩类，都要列举到io.compression.codecs中，这样Factory才能得到。
+    
+    由于各种原因(估计是版权)，Hadoop的压缩类并不是原生的，使用原生的往往可以获得更好的压缩效果。
+    设置java.library.path，指定原生代码库。另外，也可设置hadoop.native.lib=false，来禁用本地库。
+
+  2.3 MapReduce中的压缩
+    上面描述的都是HDFS中的压缩，我们再来看看MapReduce
+    2.3.1 输入
+      支持切分对于MapReduce输出是非常重要的，假如一个1G的文件，HDFS block=64M，不支持切分。
+      那么这个文件其实占有16个block，但只能在一个map中运行。显然不合理，而且网络开销也非常大。
+      如果支持切分，就不存在这个问题。支持切分的压缩算法，只有bzip2    
+    2.3.2 输出
+      而对于MapReduce的输出来说，不存在切分的问题，具体选择什么压缩，可以测试得出。
+      (网络状态好的，选择压缩快的，如LZO，网络状态不好的，选择压缩比高的，如bzip2)
+  
+  
+3. 序列化
+  序列化，经常在两个地方出现，进程间通信和持久化
+  Hadoop中，节点间的通信是通过RPC进行的。
+  
+  3.1 序列化要素
+    分别是紧凑、快速、可扩展、互操作四个。
+    1) 在进程间通讯时
+      紧凑: 减少网络带宽
+      快速: 减少延迟(也是最基本的)
+      可扩展: 需求是不断变化的，通讯的协议也会经常的改变。
+      互操作: 需要满足不同语言的客户端和服务端交互
+    2) 持久化
+      紧凑: 减少存储空间
+      快速: 不说了，基本要求
+      可扩展: 可以透明的读取老数据
+      互操作: 不同语言都可读写
+      
+  3.2 Writable接口
+    Writable是hadoop的核心。
+    hadoop自带的Writable类型都放在org.apache.hadoop.io包中。
+    通过get()和set()方法来读取和写入。(这种方式看起来有些奇怪，不过也没办法，java不支持运算符重载)
+    3.2.1 自带Writable类介绍
+      Text类
+        Text是针对UTF-8的Writable类。和java.lang.String类的编码方式很不一样。
+        Text没有像String类那样，有那么丰富的API操作。但它俩可以互转。
+      BytesWritable类
+        对二进制数据的封装
+      NullWritable类
+        它的序列化长度为0，经常用于K/V配对时使用。 (java没有指针真痛苦，只能搞出这种变异的写法)
+      ObjectWritable类
+        一个通用的封装，如果value的类型多样，可能就要用到它。
+      集合类(4个)
+      ArrayWritable
+      TwoDArrayWritable
+        数组和二维数组，使用前必须指定唯一的类型new ArrayWritable(Text.class);
+        有时候必须指定为一种类型, 就需要用到继承的方式。
+          public class TextArrayWritable extends ArrayWritable {
+            public TextArrayWritable() { super(Text.class); }
+          }
+      MapWritable
+      SortedMapWritable
+        map和排序map，使用前无需指明类型，key和value都可以使用多种类型。
+    3.2.2 定制Writable
+      继承Writable(但最好是继承WritableComparable)
+      必须要有一个默认的构造函数，以便框架对其实例化。
+      重载write()和readFields(),
+      重载hashCode(), equals(), toString()
+      若继承WritableComparable，还需重载compareTo()
+      
+
+4. 序列化框架(avro)
+   ...  
+    
+    
+5. SequenceFile
+  简单的说，就是保存K/V的二进制文件。这点对于hadoop来说太重要了，因为hadoop绝大多数的时候，都是在对K/V进行操作。
+  只要可以通过Serialization类进行序列化和反序列化的类，都可在此使用。但用得最多的，就是Writalbe类型了。
+  
+  主要使用方法有:
+    末尾写:  append()
+    顺序读:  next()
+    随机读:  seek()  // 若seek的位置，不是KV的边界，则会抛出异常
+    
+  对于这样的文件，压缩是必然的，压缩分两种:
+    记录压缩: 只压缩value，不压缩key
+    块压缩: 压缩连续的k/v，不断的往block中添加记录，直到size大于io.seqfile.compress.blocksize为止。
+    
+  文件头和同步标记
+    头部记录了与文件相关的信息，
+    同步标记(Sync)可以在读取文件时，偏移到文件任意位置都可识别记录边界。
+    记录压缩时，随机的若干条记录之后，添加Sync
+    块压缩时，每块之后添加Sync
+   
+
+6. MapFile
+  MapFile是已经排序的SequenceFile，加入了索引。
+  MapFile的数据类型要求比SequenceFile要严格，key必须是WritableComparable，value必须是Writable
+  
+  主要方法有:
+    末尾写: append()
+    顺序读: next()
+    指定读: get()，getClost()
+    seqfile转mapfile: fix()
+    
+  索引:
+    MapFile的索引并非对全部key的索引，排序之后，只对部分key索引。
+    
+  

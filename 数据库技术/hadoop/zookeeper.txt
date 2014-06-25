@@ -1,0 +1,170 @@
+1. 介绍
+  ZooKeeper是Hadoop的分布式协调服务
+
+  ZooKeeper设计时，必须考虑的特性:
+    可用性: ZooKeeper就是用来解决可用性的，所以自己必须具备非常高的可用性。
+    原子性: 读写操作都必须具有原子性。
+    高效性: 作为中心节点，所以的服务都去请求ZooKeeper，高效是必须的。
+    
+  ZooKeeper维护一个树型层次结构(可以看作一个高性能的文件系统)
+
+
+  
+2. 数据结构
+  2.1 znode
+    ZooKeeper的数据节点称为DataNode
+
+    class DataNode {
+      DataNode parent;            // 父节点
+      byte data[];                // 节点是可以保存数据的，但必须 < 1M, 对data的读写是原子性的，要读就读所有的，要写也是覆盖所有的
+      Long acl;                   // 保存节点在acl map中的值
+      StatPersisted stat;         // 短暂: 会话结束时，节点删除; 持久: 会话结束，也不删除
+      Set<String> children;       // 子节点, string里只保存子节点名
+    };
+  
+    class StatPersisted {
+      Aversion;                   // ACL的时间戳
+      Ctime;                      // 
+      Cversion;                   // 
+      Czxid;                      // 
+      Mtime;                      // 
+      Mzxid;                      // 
+      Pzxid;                      // 
+      Version;                    // version的时间戳
+      EphemeralOwner;             // 
+      DataLength;                 // 
+      NumChildren;                // 
+    };
+  
+  2.2 DataTree
+    只有唯一的DataTree对象，保存了所有的znode信息
+    class DataTree {
+      ConcurrentHashMap<String, DataNode> nodes;    // DataNode的索引
+      Map<Long, List<ACL>> longKeyMap;              // 对应了DataNode.acl, 可以查阅到DataNode的访问权限
+      WatchManager dataWatches;                     // 
+      WatchManager childWatches;                    // 
+    };
+    
+  2.3 ZKDatabase
+    保存所有的信息到本地
+    class ZKDatabase {
+      // 在本地保存DataTree, Session, log等数据
+    };
+
+
+
+3. ZooKeeper Watches
+  zookeeper所有读操作(getData(),getChildren(),exists()), 都具有设置watch的选项
+  zookeeper watch的定义如下：watch事件是一次性触发器，当watch监视的数据发生变化时，通知设置了该watch的client，即watcher。
+
+  一次性触发器:
+    节点数据变化了，通知watcher。节点再次变化了，就不通知watcher。
+    
+  严格顺序访问：
+    一定是先获取watch事件，再发现节点的数据变化。
+    watch事件的顺序对应于zookeeper服务所见的数据更新的顺序。
+
+  Watch事件类型：
+    ZOO_CREATED_EVENT：    节点创建事件，需要watch一个不存在的节点，当节点被创建时触发，此watch通过zoo_exists()设置
+    ZOO_DELETED_EVENT：    节点删除事件，此watch通过zoo_exists()或zoo_get()设置
+    ZOO_CHANGED_EVENT：    节点数据改变事件，此watch通过zoo_exists()或zoo_get()设置
+    ZOO_CHILD_EVENT：      子节点列表改变事件，此watch通过zoo_get_children()或zoo_get_children2()设置
+    ZOO_SESSION_EVENT：    会话失效事件，客户端与服务端断开或重连时触发
+    ZOO_NOTWATCHING_EVENT：watch移除事件，服务端出于某些原因不再为客户端watch节点时触发
+
+
+
+4. ACL 权限访问 
+  Access Control List, 访问控制列表
+  用来约束哪些人能执行哪些操作。
+  zookeeper提供了digest（通过用户名密码），host（通过主机名），ip（通过ip地址）3种身份验证模式，
+  依赖与zookeeper的身份验证机制每个ACL都是一个身份对应一组权限，
+  如果我们要给demo.com的客户端域一个读权限在java语言中可以这样创建：new ACL(Perms.READ, new Id("host", "demo.com"));
+  另zookeeper还可以集成第三方的身份验证系统
+  一个ACL只用于一个节点，注意不能用于该节点的子节点，即每个节点的访问权限由其自身的ACL决定。
+
+
+  
+5. 数据模型:
+  5.1 ZooKeeper不是用来存储大数据的(限制在<1MB)
+  5.2 ZooKeeper的数据访问具有原子性。
+    读: 要么读取所有的数据，要么读取失败，不可能只读取到部分数据
+    写: 要么替换所有数据，要么写入失败。
+  5.3 路径的约束
+    1. 不能像文件系统那样，使用相对路径。所有的路径都是绝对路径(即每条路径只有唯一的表示方法)
+    2. 路径由Unicode字符串构成
+    3. 有一些保留路径，不能被使用
+      /zookeeper
+  5.4 短暂znode
+    因为会话结束，节点就删除。利用这个特性，可以知道哪些分布式资源是可用的。
+  5.5 顺序号
+    可以指定生成znode时，添加顺序号。
+    比如生成带顺序号的/a/b-, 生成的节点可能是/a/b-3
+    顺序号是单调递增的计数器。(由父节点来维护)
+    使用顺序号，可以推断事件的顺序，实现共享锁等等。
+  5.6 观察(watch)
+    在对此znode进行某种操作时，可以触发观察。对设置了观察的客户端发送通知。(类似于触发器)
+
+
+
+6. 操作
+  6.1 ZooKeeper类似于文件系统，但并不是文件系统，为了简单高效，可执行的操作非常有限，下面就列举出所有的操作。
+      create            创建znode(必须有父节点)
+      delete            删除znode(不能有子节点)
+      exists            如果存在，则返回znode的原数据(也可认为是info)
+      getACL,setACL 
+      getChildren       获取子节点列表
+      getData,setData
+      sync              同步
+
+      
+      
+    
+7. 实现
+  7.1 模式(mode)
+    standalone mode: 只有一台ZooKeeper，用于测试。
+    replicated mode: 多台(奇数)ZooKeeper，用于生产。
+  7.2 写入规则
+    每一个修改至少会复制到半数以上的机器。(这样的话，如果少于半数的机器出现故障，至少有一台会保存最新的状态)
+  7.3 实现方法
+    会选举一台ZooKeeper作为leader，其余称为follower
+    所有的写请求都转发给leader，再由leader广播给follower
+    只有当半数以上的follower将写请求持久化之后，leader才会通知客户端OK
+
+    
+    
+8. ZooKeeper的几种重要应用
+  8.1 统一命名空间(Name Service) 
+    Name Service 已经是 Zookeeper 内置的功能
+    
+  8.2 集中配置管理
+    配置服务是分布式应用所需要的基本服务之一。
+    应该是一个客户端进行写，其他客户端来读。
+    其他的客户端可以通过设置观察，实时更新配置信息。
+      
+  8.3 集群管理
+    要让每一个机器知道集群中哪些机器是活着的(知道其他机器的状态)
+    做一个可靠的总管，所以机器都听从zookeeper的指挥
+    
+  8.4 锁服务
+    通过顺序号，可以提供锁服务。
+    首先有一个锁节点/leader，下面有若干需要锁的子节点。/leader/lock-1, /leader/lock-2
+    第一个子节点即为拥有锁的节点。
+    通过设置观察，第一个子节点释放，通知第二个子节点获得锁。
+
+
+
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+
+
+    
+    

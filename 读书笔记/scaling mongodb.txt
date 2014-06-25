@@ -1,0 +1,67 @@
+1. Welcome to Distributed Computing!
+2. Understanding Sharding
+一个Shard可能包含1个或多个server。如果是多个server，这些server形成一个replica-set。(每个server都有完整的数据)
+mongodb是基于chunks的管理，由于负载均衡的原因，chunk会在不同的shard中游走。
+
+a shard key
+chunks内的数据是根据一个key来排序的，这个key叫做shard-key。shard-key可以是一个field，也可以是复合field。
+一条数据属于某个chunks，仅仅因为它的key落在了这个chunk之间([a,b))。
+一条记录的shard-key不能为空，也不能改变shard-key(不能set操作, 只能remove再insert)
+记录的shard-key不必指定类型，mongodb认为，不同类型的key也可以排序，
+规则是 null < numbers < strings < objects < arrays < binary data < ObjectIds < booleans < dates < regular expressions
+chunks的大小是200MB，要相信mongodb的工程师，这个数值也是他们权衡再三的。
+
+balancer
+mongodb后台有个balancer专门解决负载平衡的问题。平衡意味着chunks的游走(带来大量的开销)。balancer是否能够做好本职工作，不帮倒忙，还有待测试。(balancer可以被关掉的，难道是mongodb的工程师也没有信心?)
+为了尽量减少balancer帮倒忙，工程师们设置成负载平衡的阀值为2GB。
+
+mongos
+mongos是user和cluster之间的桥梁，通过mongos，user可以把cluster看作一个single server。
+查询包含shard-key: mongos查询chunks表，直接将请求送往相应的shard
+不包含shard-key: mongos只能将请求送往所有的shards
+
+The Config Servers
+mongos需要的chunks表，其实就来自config servers。实际上，shards, mongos processes, system administrators等信息都存放在config servers上。
+config servers是master-master架构，任何改变chunks表的操作(读操作可以)，都必须所有的config server点头才行。(如果有config server宕掉了，必须等它up了，才能执行)
+
+mongodb cluster的架构
+有3部分组成:
+1. config servers: 元数据的存储、已经cluster的维护。
+2. mongos: cluster对外的窗口
+3. shards: 存放数据
+
+
+3. Setting Up a Cluster
+Choosing a Shard Key
+选择一个好的shard-key至关重要，shard-key选择不好，后面就玩不转了。
+当然了，选择好的shard-key是没有什么法则的，这个主要拼的是内功。
+介绍一下好的选择，和不好的选择:
+bad:
+...
+good:
+...
+
+Sharding a New or Existing Collection
+...
+
+
+Adding and Removing Capacity
+增加shard意味的大量chunks的游走，这个过程mongodb会依次的，很温柔的进行。
+...
+
+Working With a Cluster
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

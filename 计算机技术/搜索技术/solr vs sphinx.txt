@@ -1,0 +1,50 @@
+#########################  Solr VS. Sphinx   ##############################
+google搜索条数
+  solr:   20,200,000
+  sphinx: 50,300,000
+
+相似点:
+  都很优秀，效率很高
+  都有不少的粉丝
+  都可通过分布式提高性能和容量
+  
+不同点:
+  sphinx是开源的，但如果用于商业，要购买licence
+  Sphinx更多的是整合在RDBMS中，特别是MySQL
+  Solr更多是和hadoop, Nutch一起使用 
+  Solr能够索引富文本，如doc, pdf, Sphinx不行
+  Solr支持spell-checker和facet，Sphinx不行
+  关于unique keys，两者都需要，但Sphinx要求必须是非零整型，Solr还可以是字符串类型。(可以是字符串类型这点非常重要，意味着是否支持类似联合主键)
+  Solr支持field collapsing， Sphinx不行
+  
+  
+  
+
+#########################  Senseidb VS. Solr VS. ElasticSearch(ES)   ##############################
+google搜索条数
+  solr:     20,200,000
+  ES:       652,000
+  Senseidb: 41,300
+
+1. Senseidb
+都是基于Lucene的，为什么不用Solr而要用Senseidb
+下面是John Wang的访谈片段：
+Sensei leverages Lucene.
+
+We weren’t able to leverage Solr because of the following requirements:
+  * High update requirement, 10’s of thousands updates per second in to the system
+  * Real distributed solution, current Solr’s distributed story has a SPOF at the master, and Solr Cloud is not yet completed.
+  * Complex faceting support. Not just your standard terms based faceting. We needed to facet on social graph, dynamic time ranges and many other interesting faceting scenarios. Faceting behavior also needs to be highly customizable, which is not available via Solr.
+  
+归纳起来，Senseidb主打的是更新频率快，分布式处理，和facet.
+  
+
+  
+  
+2. ElasticSearch
+
+
+
+
+
+

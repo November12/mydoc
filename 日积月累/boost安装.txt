@@ -1,0 +1,19 @@
+1. 官网下载最新源代码
+www.boost.org
+
+2. 安装
+
+
+
+step1.从www.boost.org下载boost库 
+step2 在 tools\build\jam_src目录下 运行build.bat来生成jam
+step3 设置环境变量 
+PATH= C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\boost\tools\build\jam_src\bin.ntx86;%PATH% 
+PATH = C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\boost;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\boost\tools\build\jam_src\bin.ntx86;%PATH% 
+SET MSVC_ROOT="C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7" 
+SET VC7_ROOT="C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7" 
+SET VISUALC="C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7" 
+SET JAM_TOOLSET=VISUALC 
+step 4 编译boost库
+切换到含有boost-build.jam的目录下运行jam就可以了。
+写一个简单的程序就可以试试 boost怎么样了。

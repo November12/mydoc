@@ -1,0 +1,21 @@
+1．下载源代码 http://www.python.org/ftp/python/2.5.2/Python-2.5.2.tar.bz2
+
+2．安装
+　　$ tar –jxvf Python-2.5.2.tar.bz2
+　　$ cd Python-2.5.2
+　　$ ./configure
+　　$ make
+　　$ make install
+
+3. 测试
+　　# python
+　　Python 2.4.3 (#1, Dec 11 2006, 11:38:52)
+    还是老版本的Python
+    
+4. 解决办法：
+    #rm -rf /usr/bin/python
+    #ln -s /usr/local/bin/python /usr/bin/python 
+    
+    再测试
+    # python
+    Python 2.5.2 (r252:60911, Oct 28 2012, 18:30:53) 

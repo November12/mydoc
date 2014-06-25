@@ -1,0 +1,459 @@
+2. Getting Started
+概念:
+document是mongodb中最小数据单元，相当于RDBMS中的行(row)
+collection相当于table(schema-free)
+databases和RDBMS一样
+一个mongodb的实例可以运行多个databases，彼此间是独立的
+mongodb是通过自带的，强大的JavaScript shell来进行管理的。
+每个document都有一个特殊的special key(这里的key是指key/value的key，并非RDBMS中的key，下同), "_id"
+
+Documents:
+由key/value对组成
+key是字符串，但必须是UTF-8格式，且有如下规定:
+1. 中间不能有'\0'(代表结束)
+2. '.'和'$'是保留字符，有其特殊意义
+3. 最好不要以'_'开始
+4. key必须是唯一的，这样是不允许的: {"greeting" : "Hello, world!", "greeting" : "Hello, MongoDB!"}
+
+mongodb是type-sensitive和case-sensitive的:
+{"foo" : 3} 和 {"foo" : "3"}是不同的
+{"foo" : 3} 和 {"Foo" : 3}也是不同的
+
+
+Collections
+collection name: 可以是任意UTF-8字符串，要满足如下规定:
+1. 不能是空字符串("")
+2. 不能包含'\0'
+3. 不能以"system."开头
+4. '$'是保留字符，有其特殊意义
+
+Subcollections:
+通过'.'符号来分隔，如blog.sports, blog.photos，可以表示不同的collcetions。
+Subcollections之间是没有关联的，甚至和parent collection, children collection都没有关联。
+Subcollections是mongodb强烈推荐使用的，虽然没有任何特殊的地方，但逻辑上，显然可以把collection的namespace组织得很好。
+
+Databases:
+mongodb工程师推荐: 一个application只使用一个database。多个application，且user使用一个mongodb的时候，才使用多个database。
+database name: 
+1. 不能是空字符串("")
+2. 不能包含这些字符, 空格; ., $, /, \, \0
+3. 全小写
+4. 不超过64bytes
+
+每个database是单独的file，文件名和database-name一致(这就是为什么database name会有如上约束)
+
+mongodb有几个保留的database:
+1. admin: root-database, 负责user权限，以及对其他database的管理
+2. local: 其中的collectsion只能存放于本地(不能replicat)
+3. config: 主要是对shard的一些设置
+
+mondodb的namespace是  database.collection:
+如database是cms，collcetion是blog.posts，那么namespace是cms.blog.posts； namespace的长度不要超过100bytes
+
+
+Getting and Starting MongoDB
+mongod: mongodb server program
+mongod默认: 数据放到/data/db/目录(不会主动去创建这个目录，保证这个目录一定存在，并有可写权限), 使用27017端口。可以通过28017端口，通过http查询相关信息。
+通过ctrl+c可以优美的关闭mongod
+
+
+MongoDB Shell
+基于JavaScript的shell，
+
+
+
+Basic Data Types
+
+null: 				{"x": null}
+boolean: 			{"x": true}
+32-bit integer: 	{"x": 								// shell不支持
+64-bit integer:											// shell不支持
+64-bit float: 		{"x": 3.14}							// shell中的number都是此类型
+string:				{"x": "hello"}						// UTF-8格式
+symbol:													// shell不支持
+object id:			{"x": ObjectId()}					// a unique 12-byte ID
+date:				{"x": new date()}					// milliseconds, 没有时区概念
+regular expr:		{"x": /foobar/i}					// JavaScript’s regular expression
+code:				{"x": function() {/* ... */}}		// JavaScript code
+binary data:		{"x": 								// shell不支持
+maximum value:											// shell不支持
+minimum value:											// shell不支持
+undefined:			{"x": undefined}					// 类似于null，两者也是有区别的
+array:				{"x": ["a", "b", "c"]}				// 元素可以是不同的类型, 也可建索引
+embedded document:	{"x": {"foo": "bar"}}				// 更接近自然的表达方式
+
+
+
+3. Creating, Updating, and Deleting Documents
+3.1 Insert
+db.foo.insert({"bar" : "baz"})
+batch insert: 批量插入的好处是显而易见的，MongoDB的message上限是16MB，批量操作尤其要注意。(document的上限是4MB)
+
+3.2 Remove
+remove之后没有任何方法能够挽回，这点一定要注意!!
+db.users.remove()  // 删除所有数据，但不删表、索引
+
+3.3 Update
+3.3.1 update(query, value); update是原子操作
+步骤: findone() -> change BSONObj -> update()
+
+3.3.2 如果只是对小部分数据进行的修改，可以使用$set, $unset, $inc ...
+$inc: 
+	value += n; value 必须是 number类型
+	{"$inc" : {"pageviews" : 1}}
+$set: 				{"$set" : {"name" : "hujj"}} 也可用于复合 {"$set" : {"author.name" : "hujj"}}
+$unset:				{"$unset" : {"name" : 1}}
+$push:
+	对于数组元素的操作
+$ne: 
+	和$push配合使用，如果没有此元素，才加入此元素
+	db.papers.update({"authors cited" : {"$ne" : "Richie"}}, {$push : {"authors cited" : "Richie"}})
+$addToSet:
+	同$ne/$push一样，用于阻止重复的插入
+	db.papers.update({}, {$addToSet : {"authors cited" : "Richie"}})
+$each:
+	和$addToSet配合使用，可以一次插入多个元素
+	db.users.update({"name" : "hujj"}, {"$addToSet" : {"emails" : {"$each" : ["joe@php.net", "joe@example.com", "joe@python.org"]}}})
+$pop:
+	pop一个元素
+	{$pop : {key : 1}}   从尾部删除
+	{$pop : {key : -1}}  从首部删除
+$pull:
+	删除元素(可能是多个)
+	db.lists.update({}, {"$pull" : {"todo" : "laundry"}})   从todo中，删除laundry (删除所有的laundry，不一定是一个)
+index(index or $)
+	通过下标的方式对数组元素进行操作
+	db.blog.update({"post" : post_id}, {"$inc" : {"comments.0.votes" : 1}})
+	db.blog.update({"comments.author" : "John"}, {"$set" : {"comments.$.author" : "Jim"}})
+
+3.3.3 效率:
+	只改变值，不改变documents大小的操作，例如$inc；是很高效的。
+	改变documents的大小，意味着重新申请新的空间，这种操作速度会比较慢。
+	
+3.3.4 upserts
+	upserts的逻辑如下: (整个操作是原子操作)
+	if (find) then
+		do update;
+	else
+		do create;
+	endif
+	
+	example: db.math.update({"count" : 25}, {"$inc" : {"count" : 3}}, true)		update第3个参数为true
+	
+3.3.5 Updating Multiple Documents
+	以上update均是对第一个匹配数据进行的修改，批量修改，需要将update第4个参数置为true
+	db.users.update({birthday : "10/13/1978"}, {$set : {gift : "Happy Birthday!"}}, false, true)
+	可通过getLastError，查看更新的条数
+
+3.3.6 findAndModify
+	update是原子操作，但有时间需要先find(), 然后将结果update(); 这两个步骤
+	findAndModify就是将这两个步骤作为一个原子操作。
+	如 db.runCommand({"findAndModify" : "processes",
+						"query" : {"status" : "READY"},
+						"sort" : {"priority" : -1},
+						"update" : {"$set" : {"status" : "RUNNING"}}).value
+	将 READY -> RUNNING;
+
+3.4 GetLastError
+	insert, update, remove操作都没有返回值。虽然效率很高，但是无法确认是否执行成功。
+	在较严格的地方，请使用GetLastError
+	
+
+	
+
+
+
+4. Querying
+find里面的条件必须是常量，不能:
+db.stock.find({"in_stock" : "this.num_sold"})			// 希望in_stock = num_sold，但无法实现
+
+db.users.find()											select * from users
+db.users.find({"age" : 27})								select * from users where age = 27
+db.users.find({"username" : "joe", "age" : 27})			select * from users where "username" = "joe" and age = 27
+db.users.find({}, {"username" : 1, "email" : 1})		select username, email from users
+db.users.find({}, {"username" : 1, "_id" : 0})			// no case  // 即时加上了列筛选，_id也会返回；必须显式的阻止_id返回
+db.users.find({"age" : {"$gte" : 18, "$lte" : 30}})		select * from users where age >=18 and age <= 30		// $lt(<) $lte(<=) $gt(>) $gte(>=)
+db.users.find({"username" : {"$ne" : "joe"}})			select * from users where username <> "joe"
+db.users.find({"ticket_no" : {"$in" : [725, 542, 390]}})	select * from users where ticket_no in (725, 542, 390)
+db.users.find({"ticket_no" : {"$nin" : [725, 542, 390]}})	select * from users where ticket_no not in (725, 542, 390)
+db.users.find({"$or" : [{"ticket_no" : 725}, {"winner" : true}]})	select * form users where ticket_no = 725 or winner = true
+db.users.find({"id_num" : {"$mod" : [5, 1]}})			select * from users where (id_num mod 5) = 1
+db.users.find({"$not": {"age" : 27}})					select * from users where not (age = 27)
+db.users.find({"username" : {"$in" : [null], "$exists" : true}})	select * from users where username is null		// 如果直接通过find({"username" : null})进行查询，那么连带"没有username"的纪录一并筛选出来
+db.users.find({"name" : /joey?/i})						// 正则查询，value是符合PCRE的表达式
+db.food.find({fruit : {$all : ["apple", "banana"]}})	// 对数组的查询, 字段fruit中，既包含"apple",又包含"banana"的纪录
+db.food.find({"fruit.2" : "peach"})						// 对数组的查询, 字段fruit中，第3个(从0开始)元素是peach的纪录
+db.food.find({"fruit" : {"$size" : 3}})					// 对数组的查询, 查询数组元素个数是3的记录，$size前面无法和其他的操作符复合使用
+db.users.findOne(criteria, {"comments" : {"$slice" : 10}})		// 对数组的查询，只返回数组comments中的前十条，还可以{"$slice" : -10}， {"$slice" : [23, 10]}; 分别返回最后10条，和中间10条
+db.people.find({"name.first" : "Joe", "name.last" : "Schmoe"})  // 嵌套查询
+db.blog.find({"comments" : {"$elemMatch" : {"author" : "joe", "score" : {"$gte" : 5}}}})	// 嵌套查询，仅当嵌套的元素是数组时使用,
+db.foo.find({"$where" : "this.x + this.y == 10"})		// 复杂的查询，$where当然是非常方便的，但效率低下。对于复杂查询，考虑的顺序应当是 正则 -> MapReduce -> $where
+db.foo.find({"$where" : "function() { return this.x + this.y == 10; }"})	// $where可以支持javascript函数作为查询条件
+db.foo.find().sort({"x" : 1}).limit(1).skip(10);		// 返回第(10, 11]条，按"x"进行排序; 三个limit的顺序是任意的，应该尽量避免skip中使用large-number
+
+$-prefixed keys有两种类型: modify 和 condition, modify用于update, condition用于query; 
+modify是总是放在document的外面，如: "$inc" : {"age" : 1}
+condition总是放在document的里面, 如: {"$gte" : 18, "$lte" : 30}
+
+没有$eq操作符
+
+db.blog.posts.findOne(criteria, {"comments" : {"$slice" : 10}})
+
+
+Cursors
+find()返回一个Cursors
+var cursor = db.collection.find();
+while (cursor.hasNext()) {obj = cursor.next(); do...}
+cursor.forEach(function() { do... })
+调用find(), 并不会去DB查询数据，只有使用到数据的时候才回去查询
+var cursor = db.foo.find().sort({"x" : 1}).limit(1).skip(10);		// 并不去DZ查找
+cursor.hasNext();													// 查找min(100条，或者4MB)
+
+cursor有两个，一个是client-facing cursor， 另一个是database cursor
+client-facing cursor负责给用户操作，是client看得见的cursor
+database cursor负责资源的管理。database cursor会很智能的通过client-facing cursor的状态，决定是否释放资源。
+所以不用担心申请的资源释放时机问题。
+
+分页
+分页最好不用skip(性能不好), 采用排序+记录上次值的方式更好
+
+
+
+
+5. Indexing
+mongodb的index和RDBMS的完全一样。
+index会增加insert, update, delete的开销，所以也应当尽量少的创建index. (一个collection至多可以创建64的index)
+
+table scan
+如果没有index，需要对全表扫描("table scan")，这也不一定全是坏的。如果查询出的数据，超过总数据的一半，不加索引还会快些。
+当然了，如果只查询一条数据，那索引肯定快很多。
+
+
+有index: {"a" : 1, "b" : 1, "c" : 1, ..., "z" : 1}
+可以优化query: {"a" : 1}, {"a" : 1, "b" : 1}, {"a" : 1, "b" : 1, "c" :1} ...
+但无法优化: {"b" : 1}, {"a" : 1, "c" :1}
+
+有index: index {"y" : 1, "x" :1}
+无法优化query: {"x" : "foo", "y" : "bar"}
+
+也可以给Embedded-Documents加上index
+ensureIndex({"comments.date" : 1})
+
+对sorts的影响
+如果没有index，mongodb会将所有的数据载入内存，然后对其排序。显然，这样是无比的慢，而且数据量一大，mongodb无法将所有的数据都载入内存，排序将失败。
+对于需要sort的场合，一定要index
+
+index的名字问题
+默认：ensureIndex({"a" : 1, "b" : -1, "c" : 1}); index的名字是a_1_b_-1_c_1
+如果index很长，名字也会很长，甚至因为超过长度上限而导致创建index失败。
+可以给index起个名字来解决这个问题(这个维护起来也更清晰一点)
+
+
+唯一index
+mongodb中index并不是唯一的(和RDBMS不一样)
+必须显式注明.  ensureIndex({"a" : 1}, {unique : true})
+ps: 对于没有a的insert, 会在索引里加入a: null
+如果是唯一index，至多只能有一个document没有a
+
+explain and hint
+db.people.find().explain()
+{
+	"cursor" : "BasicCursor",				// 游标类型，BasicCursor表明没有使用到index
+	"indexBounds" : [ ],
+	"nscanned" : 64,						// 此次查询遍历的document数目
+	"nscannedObjects" : 64,					
+	"n" : 64,								// 返回的document数目，显然nscanned 和 n 越接近越好
+	"millis" : 0,							// 执行查询的毫秒数
+	"allPlans" : [
+		{
+		"cursor" : "BasicCursor",
+		"indexBounds" : [ ]
+		}	
+	]
+}
+
+通过explain()，可以知道使用了什么index，如果使用的index和期望的不一样，可以在find()的时候，通过hint指明index(通常情况下，没有这个必要)
+db.c.find({"age" : 14, "username" : /.*/}).hint({"username" : 1, "age" : 1})
+
+
+index的管理
+index的信息都存放在system.indexes里面
+修改index可以加上background
+ensureIndex({"username" : 1}, {"background" : true})
+这样可以在后台进行处理，而不影响前端的服务
+
+
+
+
+
+
+
+db.test.ensureIndex({"a" : 1, "b" : 1, "c" : 1, ..., "z" : 1})
+
+
+
+
+
+
+
+
+
+7. Advanced Topics
+7.1 Database Commands
+db.runCommand()可以实现所有的功能，是高级用法。
+如: db.test.drop()可以写成 db.runcommand({"drop" : "test"})		// 或者说，所有其他命令，都只是runcommand的一种助记方式。
+runcommand支持的命令，可以通过db.listcommand()查阅
+
+7.2 Capped Collections(主要用来做cache的)
+普通的collections空间是动态分布的，可伸缩的。
+Capped Collections的空间是一定的。如果数据多了，就会淘汰旧的数据。(类似环型缓冲区)
+Capped Collections不能进行delete和update操作。
+
+7.3 GridFS: Storing Files
+分布式的存储，不必考虑故障或伸缩性问题
+GridFs毕竟不是文件系统， 没有文件系统的一些弊病，如一个目录下的文件数目限制
+GridFs外观看上去，都是2GB的大文件
+
+mongodbfile 命令可以方便的进行文件操作
+put | get | list | ...
+
+GridFS是基于普通的documents. GridFS的任务全是在客户端解释完成的，对于server端看来，压根不知道有GridFS这么个东西。
+通过两张表来存储GridFS:
+db.fs.chunks: 文件内容存放在这里
+{ 
+	"_id" : ObjectId("4e9feefadfcc255f5523e218"), 			// document都有的_id
+	"files_id" : ObjectId("4e9feec7af6006ef5d466bdb"),		// 文件在fs.files中的_id, 如果一个文件有多个chunks, 每个chunks的files_id都相同
+	"n" : 4096,												// 文件的chunks序号，从0开始
+	"data" : BinData(0,"...") 								// 文件的内容
+}
+如 
+{ "_id" : ObjectId("4e9feec7dfcc255f5523d218"), "files_id" : ObjectId("4e9feec7af6006ef5d466bdb"), "n" : 0 }
+{ "_id" : ObjectId("4e9feec7dfcc255f5523d219"), "files_id" : ObjectId("4e9feec7af6006ef5d466bdb"), "n" : 1 }
+..
+{ "_id" : ObjectId("4e9feefadfcc255f5523e218"), "files_id" : ObjectId("4e9feec7af6006ef5d466bdb"), "n" : 4096 }
+
+db.fs.files: 存放文件的元数据
+{ 
+	"_id" : ObjectId("4e9feec7af6006ef5d466bdb"), 			// fs.chunks里面会纪录这个id
+	"filename" : "hujj.exe", 								// GridFS中的文件名
+	"chunkSize" : 262144, 									// 每个chunk的大小，默认是256K
+	"uploadDate" : ISODate("2011-10-20T09:50:53.590Z"), 	// 创建时间
+	"md5" : "cd573cfaace07e7949bc0c46028904ff", 			// 文件的md5码, 和md5sum的结果一致
+	"length" : NumberLong(1073741824) 						// 文件
+}
+
+7.4  Server-Side Scripting
+db.system.js.find()											// JavaScript code && value
+
+
+
+7.5 Database References(DBRefs)
+{"$ref" : collection, "$id" : id_value}
+或者
+{"$ref" : collection, "$id" : id_value, "$db" : database}	// $db默认为当前database
+...
+
+
+8 Administration
+8.1 Starting MongoDB(mongod)
+--dbpath: 
+	mongod的data目录。默认是/data/db。如果运行几个mongod，需要指定不同的data目录。(mongod运行时，会在data目录创建一个mongod.lock，阻止其他mongod使用此目录)
+--port:   
+	端口号，默认是27017。
+--fork: 
+	作为daemon运行mongod
+--logpath: 
+--logappend:
+	指定一个文件路径(不是目录)。如果文件存在，会覆盖原文件。(可以加上--logappend保留原log信息)
+--config:
+	指定配置文件路径(可以替代command line)。格式如下: 
+		# Start MongoDB as a daemon on port 5586
+		port = 5586
+		fork = true # daemonize it!
+		logpath = mongodb.log
+		
+8.2 Stopping MongoDB
+发送中断 SIGINT 或者 SIGTERM; 可以安全的关闭MongoDB。
+安全关闭有如下步骤:
+step 1: finish current operations
+step 2: close all open connections
+step 3: flush all data to disk
+step 4: halt
+
+如果不幸非正常关闭了MongoDB。可以修复(repair)数据库。
+可以通过--repair选项修复数据库。
+修复数据库过程，会导出所有vaild的数据，并重建所有的索引。(因此速度很慢)
+因此，invaild的数据将会被丢失。
+
+
+8.3 Moniter
+8.3.1 mongod同时会提供一个http协议的监控接口，可以监控mongod的状态。
+http://localhost:28017   // 端口号为 (mongod端口号 + 1000)
+	
+--rest:
+	打开rest api，提供更多的监控信息
+--nohttpinterface:
+	管理web监控接口
+	
+8.3.2 也可以通过db.runCommand({"serverStatus" : 1}) 查询信息。 (对应监控接口的http://localhost:28017/_status)
+...
+
+8.3.3 mongostat命令
+mongostat提供了动态的查询方式。可以每隔几秒钟，刷新一次状态。是非常友好的查询方式。
+
+8.3.4 Third-Party Plug-Ins
+通过第三方插件，查询mongod状态。(通过对http://localhost:28017/_status的解释，提供更友好的查询方式)
+
+8.4 Security and Authentication
+
+
+8.5 Backup and Repair
+8.5.1 直接拷贝data目录。 
+优点: 简单，安全。
+缺点: 必须关闭mongod，只能导出一台机器的数据。
+
+8.5.2 mongodump & mongorestore 
+作为一个普通客户端，import所有数据; mongorestore可以将mongodump导出的数据再次导入mongod
+优点: 可以导出整个集群的数据
+	  支持hot backup
+缺点: 中途不能够有写操作
+针对不能写的问题，可以通过db.runCommand({"fsync" : 1, "lock" : 1}); 锁住写操作。
+
+8.5.3 Slave Backups
+这也是mongoDB推荐的方法。
+优点: 完全不影响服务器运行。总是有个近似的备份。
+	  在backups上面做snopshot等操作非常方便，没什么顾忌。
+缺点: 需要额外的硬件投入。如果是shard，还不止要投入一台机器。
+
+
+
+
+
+
+
+
+
+
+
+
+
+9 Index
+
+
+
+	
+	
+
+	
+	
+	
+File-Based Configuration
+
+
+journal:
+
+
+
+
+
+

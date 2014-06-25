@@ -1,0 +1,18 @@
+ETL，Extraction(数据提取)-Transformation(转换)-Loading(加载)
+        input     ->          process       ->   output1
+        
+作用: 从不同异构数据源流向统一的目标数据
+一次转换指明了某种格式的数据如何格式化成另一种格式的数据, 
+
+
+ETL元数据: 每次转换前后的数据结构和转换的规则
+
+
+
+
+
+常用工具: Informatic PowerCenter、DataStage、Kettle(开源)
+
+ETL可以提供什么:
+  图形化操作界面
+

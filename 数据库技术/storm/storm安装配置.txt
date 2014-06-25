@@ -1,0 +1,74 @@
+1. 前期准备
+  storm需要的组件还是很多的，需要逐一安装:
+    1.1 zookeeper集群
+      略
+    1.2 ZeroMQ 2.1.7(注意兼容性问题，只能是2.1.7)
+      wget http://download.zeromq.org/zeromq-2.1.7.tar.gz
+      tar -xzf zeromq-2.1.7.tar.gz
+      cd zeromq-2.1.7
+      ./configure
+      make
+      sudo make install
+    1.3 JZMQ
+      https://github.com/zeromq/jzmq 下载 jzmq-master.zip
+      unzip jzmq-master.zip
+      cd jzmq-master
+      ./autogen.sh
+      ./configure
+      make
+      make install
+    1.4 Python 2.6.6(以上版本)
+      wget http://www.python.org/ftp/python/2.7.2/Python-2.7.2.tgz
+      tar zxvf Python-2.7.2.tgz
+      cd Python-2.7.2
+      ./configure
+      make
+      make install
+      
+2. storm安装配置
+  2.1 下载storm
+    https://github.com/nathanmarz/storm/downloads 下载 storm-0.8.1.zip
+    unzip storm-0.8.1.zip
+    cd storm-0.8.1
+    
+  2.2 配置storm.yaml
+    # zookeeper配置
+    storm.zookeeper.servers:                   
+      - "10.15.107.142"
+      - "10.15.107.143"
+      - "10.15.107.144"
+    storm.zookeeper.port: 4181
+
+    # Nimbus和Supervisor在本地磁盘上需要一个目录来存储一些状态信息
+    storm.local.dir: "/mnt/storm"
+
+    # storm所依赖的本地依赖(ZeroMQ和JZMQ)的加载地址
+    java.library.path: "/usr/local/lib:/opt/local/lib:/usr/lib"
+　　
+    # 所有工作机器需要nimbus机器的地址， 这样它们才知道去哪里获取jar包和配置文件
+    nimbus.host: "10.15.107.142"
+　　
+    # 几个槽就是几个工作进程
+    supervisor.slots.ports:
+      - 6700
+      - 6701
+      - 6702
+      - 6703
+
+3. 启动服务
+  3.1 启动
+    bin/storm nimbus&
+    bin/storm supervisor&
+    bin/storm ui&
+  
+  3.2 监控
+    bin/storm ui
+    http://{nimbus.host}:8080/
+    
+  3.3 进程一览(jps)
+    core                Storm UI进程
+    nimbus              Storm nimbus进程
+    supervisor          Storm supervisor进程
+    worker              work进程，Storm main函数里设置 conf.setNumWorkers(15)
+    QuorumPeerMain      zookeeper进程
+  

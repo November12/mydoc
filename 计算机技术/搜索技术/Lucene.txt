@@ -1,0 +1,202 @@
+搜索引擎的组成
+　搜索引擎一般由搜索器、索引器、检索器和用户接口四个部分组成： 
+  搜索器
+  　　其功能是在互联网中漫游，发现和搜集信息； 
+  索引器
+  　　其功能是理解搜索器所搜索到的信息，从中抽取出索引项，用于表示文档以及生成文档库的索引表； 
+  检索器
+  　　其功能是根据用户的查询在索引库中快速检索文档，进行相关度评价，对将要输出的结果排序，并能按用户的查询需求合理反馈信息； 
+  用户接口
+  　　其作用是接纳用户查询、显示查询结果、提供个性化查询项。
+  
+  
+Document可以看作是 数据库的一行记录，Field可以看作是数据库的字段。
+
+
+Lucene 是一个基于 Java 的高性能文本搜索引擎库
+Lucene其实很简单的,它最主要就是做两件事:建立索引和进行搜索
+
+Analyzer: 分析器, 主要用于分析搜索引擎遇到的各种文本。常用的有StandardAnalyzer分析器, StopAnalyzer分析器, WhitespaceAnalyzer分析器等。
+Directory:索引存放的位置; lucene提供了两种索引存放的位置，一种是磁盘，一种是内存。一般情况将索引放在磁盘上；相应地lucene提供了FSDirectory和RAMDirectory两个类。
+Document: 文档; Document相当于一个要进行索引的单元，任何可以想要被索引的文件都必须转化为Document对象才能进行索引。
+Field：   字段。
+IndexSearcher: 是lucene中最基本的检索工具，所有的检索都会用到IndexSearcher工具;
+Query:         查询，lucene中支持模糊查询，语义查询，短语查询，组合查询等等, 如有TermQuery, BooleanQuery, RangeQuery, WildcardQuery等一些类。
+QueryParser:   是一个解析用户输入的工具，可以通过扫描用户输入的字符串，生成Query对象。
+Hits:          在搜索完成之后，需要把搜索结果返回并显示给用户，只有这样才算是完成搜索的目的。在lucene中，搜索的结果的集合是用Hits类的实例来表示的。
+
+
+
+
+Solr是一个高性能，采用Java5开发，基于Lucene的全文搜索服务器, 同时对其进行了扩展, 提供了比Lucene更为丰富的查询语言
+Lucene仅仅是一个全文检索包，Solr才是一个搜索服务器，通过XML接口，可以通过多种语言(JSP, PHP...)开发前台程序
+主要特性:
+  高效、灵活的缓存功能
+  垂直搜索功能
+  高亮显示搜索结果
+  通过索引复制来提高可用性
+  提供一套强大Data Schema来定义字段
+  类型和设置文本分析
+  提供基于Web的管理界面
+
+安装和配置
+  java 1.5
+  Ant 1.6.x
+  servlet容器(tomcat 5.5)
+  
+Indexed Field: 可以进行搜索和排序， 还可以供solr分析
+
+stored Field: 保存在索引中。
+
+
+  
+  
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+附1: SchemaXml.xml
+  定义了加入索引的数据的数据类型
+  1.1 <types>
+    name：就是这个FieldType的名称。
+    class：指向org.apache.solr.analysis包里面对应的class名称, 用来定义这个类型的行为
+    选项:
+      sortMissingLast: 没有此列则排序到最后，默认(false)
+      sortMissingFirst: 有此列则排序到最前, 默认(false)
+      omitNorms：是否忽略field的norm信息
+      precisionStep: 做range search的起作用的，默认值是4
+      positionIncrementGap: 跨段查询时起作用，
+    例子:
+      <types>
+         <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+         ... 
+      </types>
+    此外还可以自定义数据类型
+      
+  1.2 <fields>
+    name：   字段名
+    type：   之前定义过的各种FieldType
+    indexed：是否被索引
+    stored： 是否被存储
+    multiValued：是否有多个值
+    例子:
+      <fields>
+        <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+        <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
+        ...
+      </fields>
+      
+  1.3 <copyField ...>
+    处于性能考虑，将多个列结合起来
+    例子:
+      <copyField source="cat" dest="id"/>
+      <copyField source="name" dest="id"/>
+      
+  1.4 <uniqueKey>
+    主键, 只要ID相同，则是更新而不是插入
+      
+
+      
+附2: solrconfig.xml
+  2.1 <indexConfig>
+    <useCompoundFile>:  合并文件，以达到减少句柄的目的，性能也会受到影响。默认false
+    ... 
+  2.2 <lib ..>
+    加载的jar包有哪些
+    
+  2.3 <dataDir>
+    数据存放的目录
+    
+  2.4 <requestHandler ..>
+    非常重要的配置，指明url和
+  
+  2.5 <SearchHandler ..>
+    查询相关的组件，非常有用
+    query - QueryComponent 
+    facet - FacetComponent 
+    mlt - MoreLikeThis 
+    highlight - Highlighting 
+    stats - Statistics  Solr1.4 
+    debug - Debug 
+
+附3: solr.xml
+  3.1 这个文件是告诉solr应该加载哪些core
+  
+  3.2 例子
+  <?xml version="1.0" encoding="UTF-8" ?>　　
+　 <solr persistent="true" sharedLib="lib">　　
+　　<cores adminPath="/admin/cores">　　
+　　　<core name="core0" instanceDir="core0"/>　　
+　　　<core name="core1" instanceDir="core1"/>　　
+　　</cores>　　
+　</solr>
+
+  3.3 也可以给core添加一些属性
+  <core 　name="core0"　instanceDir="core0">　
+　　<property　name="dataDir"　 value="/data/core0"　/>　
+　</core>
+　solr.core.name -- The core's name as defined in solr.xml
+　solr.core.instanceDir -- The core's instance directory (i.e. the directory under which that core's conf/ and data/ directory are located)
+　solr.core.dataDir -- The core's data directory (i.e. the directory under which that core's index directory are located)
+　solr.core.configName -- The name of the core's config file (solrconfig.xml by default)
+  solr.core.schemaName -- The name of the core's schema file (schema.xml by default)
+
+  <solr persistent="true" sharedLib="lib">
+    <cores adminPath="/admin/cores"> 
+  </solr>
+
+附4: 动态创建新的core
+  4.1 确保solr.xml中，persistent="true"
+    <solr persistent="true">
+  4.2 复制collection1到新的core中，如ST37019
+  4.3 执行
+    http://10.15.107.155:8080/solr/admin/cores?action=CREATE&name=ST37019&instanceDir=/usr/local/solr-4.1.0/example/solr/ST37019&config=solrconfig.xml&schema=schema.xml&dataDir=data
+    查看solr.xml，会发现已经加入ST37019相关<core>
+      <core schema="schema.xml" loadOnStartup="true" instanceDir="/usr/local/solr-4.1.0/example/solr/ST37019/" transient="false" name="ST37019" config="solrconfig.xml" dataDir="data"/>
+
+
+
+
+

@@ -1,0 +1,10 @@
+notepad+							代码编辑
+SecureCRT							telnet
+ipmsg								  局域网通讯
+SourceInsight					代码查阅
+baretail							日志查阅
+NSIS								  打包
+Wireshark							网络抓包
+iftop								  网络流量查看(linux)
+balsamiq mockups      快速原型建模
+SQLyog                MySQL客户端工具

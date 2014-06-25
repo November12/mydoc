@@ -1,0 +1,169 @@
+第1章 Java简介
+  1.1 Java的平台根据用途来区分，可以分为三个版本。
+    Java SE —— Java Standard Edition，这是Java的标准版，主要用于桌面级的应用和数据库的开发。 
+    Java EE —— Java Enterprise Edition，这是Java的企业版，提供了企业级开发的各种技术，主要用于企业级开发，现在用的最多的也就是这个。 
+    Java ME —— Java Micro Edition，这个版本的Java主要用于嵌入式的和移动式的开发，最常用的就是手机应用软件的开发。
+    
+  1.2 JDK常用命令
+    1.2.1 javac常用命令
+      -g:：生成调试信息。
+      -g:none：生成无调试信息。
+      -g:{lines,vars,source}：只生成部分调试信息。
+      -O：优化，可能增大类文件。
+      -nowarn：无警告。
+      -verbose：输出编译器信息。
+      -deprecation：输出不鼓励使用的API的程序路径。
+      -classpath + 路径：指定用户类文件的路径。 
+      -sourcepath + 路径：指定输入源文件的路径。
+      -bootclasspath + 路径：覆盖自举类文件的路径。
+      -extdirs + 目录：覆盖扩展类的路径。
+      -d + 目录：指定输出类文件的路径。
+      -encoding + 编码：指定源文件中的字符集编码。
+      -target + 版本：生成虚拟机的类文件。
+    1.2.2 JDK的常用命令
+      native2ascii：将中文unicode码转换成ascii码的
+      -reverse参数可以将ascii码转换回来。 
+      javap：将class反编译成Java bytecodes。
+      jdb：Java的debug工具。
+      jps：查看JVM进程信息用的。
+      keytool：生成keystore文件。 
+      jar：可将多个文件合并为单个JAR文件，jar是个多用途的压缩工具，它基于ZIP和ZLIB压缩格式的。
+      javadoc：Javadoc解析Java源文件中的声明和文档注释，并产生相应的HTML页面，描述公有类、保护类、内部类、接口、构造函数、方法。在实现时，javadoc要求且依赖于Java编译器完成其工作。
+  
+  1.3 JDK各个目录含义
+    bin: 上述说的所有的基本程序和工具
+    jre: java运行时的环境
+    lib: java的类库
+    src: 类库的源代码
+  
+  1.4 java程序开发过程
+    helloworld.java           文件名和类名一定要一样，而且区分大小写
+    -> javac                  执行 javac helloworld.java， 注意是带后缀.java的
+    -> helloworld.class       生成了二进制无关的.class 文件
+    -> java                   将.class文件在java虚拟环境中执行, java helloworld, 注意这里是不带后缀.class的
+
+第7章 控制逻辑
+
+第8章 继承
+  关键字: extends
+  修饰符: public、private、default、protected
+  final, abstract
+  
+  反射:
+    
+  泛型:
+  
+  
+    
+    
+第9章 接口
+  关键字: interface, 类似C++的纯虚类
+  接口里的成员变量默认为public static final类型的
+  接口里的方法默认被修饰为public、abstract类型(也只能)
+  接口不能声明为final的，因为final类型的必须要实现
+  
+  抽象类:
+    类似C++的抽象类，可以有抽象方法，也可以有具体实现
+  
+  instanceof运行时检查类型
+
+    
+第10章 构造器
+  调用父类使用的是super()
+
+第11章 异常处理
+  和C++一样，不用纠结
+
+
+第12章 内部类
+  内部类作为外部类的一个成员，并且依附于外部类而存在的。可用protected和private修饰。
+  外部类只能是public，和包来控制访问权限
+  
+  12.1 内部类的优势
+    1. 内部类可以继承自己的类和接口，完全不受外部类的影响。这可以实现很多高级功能。比如多重继承。
+    2. 更好的封装，结构更加清晰，并且隐藏细节。
+    3. 内部类可以随意访问外部类的成员变量(包括私有), 这为设计代码，提供了更多的思路。
+    
+  12.1 成员内部类
+    Outer要访问Inner，必须先创建一个Inner的对象
+    Inner要访问Outer，直接访问即可
+    class Outer
+    { 
+      class Inner 
+      {
+        //内部类成员
+      }
+      //外部类成员
+    }
+
+  12.2 局部内部类
+    private class Inner()
+    
+  12.3 静态内部类
+    static class Inner();
+    只有静态内部类，可以有自己的静态成员变量，静态方法
+  
+  12.4 匿名内部类
+    很好理解，和C++一致
+    
+    
+
+    
+
+
+第13章 多线程
+  13.1 定义线程有两种方法:
+    1 继承Thread类定义线程
+    2 实现Runnable接口定义线程
+  13.2 两者的区别
+    1. Thread类也是Runnable接口的子类, 可以看做是Runnable的实现
+    2. 尽量用Runnable，因为新的类只能继承于一个类，但可以继承多个接口
+    3. Runnable可以实现资源共享。(将一个对象传入多个thread中)
+
+    
+第17章 JDBC数据库编程
+  17.1 客户端直接连接数据库带来的弊端
+    1. 耦合度太高，替换数据库，将导致客户端无法运行
+    2. 每个客户端都和服务器连接，数据库的连接数过大。
+    因此，现在一般都采用中间层的方法来连接数据库, JDBC也是其中的一种。
+  17.2 
+
+    
+第18章 Java中输出输入流
+  18.1 抽象类
+    其它各种流操作内，都是继承以下这4个类而来
+    字节流: InputStream, OutputStream
+    字符流: Reader, Writer
+    异常是必须要捕获的
+  18.2 FileInputStream, FileReader
+    对文件进行操作
+ 
+    
+第19章 集合框架
+  19.1 Vector 类
+    一般都用ArrayList类来替代
+  19.2 ArrayList 类
+    基于动态数组的数据结构
+  19.3 LinkedList 类
+    基于链表的数据结构, 操作和ArrayList大致一样
+  19.4 TreeSet 类
+    实现了SortedSet接口，元素按升序排列，元素将是唯一的
+  19.5 HashSet 类
+    数据是乱序的，元素不会重复
+  19.6 HashMap 类
+    是基于哈希表的Map接口的实现, 乱序，元素不会重复
+  19.7 TreeMap 类
+    是SortedMap接口的基于红黑树的实现, 
+  
+    
+第20章 网络编程
+  用到的包: java.net
+  20.1 ServerSocket类 - 应用在服务器端的类
+    ServerSocket server = new ServerSocket(9876);
+    Socket sc = server.accept();
+  20.2 Socket类 - 应用在客户端的类
+  
+  
+  
+  
+   

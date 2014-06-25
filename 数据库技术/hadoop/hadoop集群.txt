@@ -1,0 +1,121 @@
+1. 集群规范
+  1. 商业硬件不等于低端硬件，低端机器的维护成本更高。
+  2. 商业硬件也不等于大型数据库级别的机器，性价比太低。
+  3. 2010年推荐配置: 
+    4核CPU:       Hadoop可以很好的利用到多核CPU
+    16G ECC RAM:  强烈建议使用ECC内存，大量的非ECC内存带来的校验和错误，对系统影响很大。
+    4 * 1TB disk: namenode(单点)建议使用RAID, datanode不建议使用RAID(本身就是冗余存储)
+    千兆网卡:     集群都靠它了
+  4. Unix环境
+    虽然hadoop主体是Java程序，理论上只要有JVM即可运行，但仍然有一些脚本代码只能在Unix运行。
+    (hadoop并不适合在非Unix平台下用于生产)
+  5. namenode必须运行在64位系统下，避免3G内存的限制。
+  6. 最好将主节点(namenode, 辅助namenode, jobtracker)放置在不同机器上。
+     namenode对内存消耗比较大，jobtracker对于CPU消耗比较大。而辅助namenode和namenode放置在一台机器上，可能意义不大。
+  
+
+2. 网络拓扑
+  2.1 两级网络拓扑 - 交换机 / 机架
+    同一机架内部节点的总带宽要远高于不同机架间节点的带宽。
+    /交换机          核心交换机
+      /机架1           1GB的交换机、接30-40台机器
+        节点1
+        节点2
+        节点3
+      /机架2
+        节点1
+        节点2
+        节点3
+    namenode 和 jobtracker 都需要知道网络拓扑来优化集群。
+
+  2.2 设置
+    hadoop采用map的方式来映射网络位置的。
+    hadoop需要一个脚本，每当有tasktracker连接上jobtracker时，都会将这台机器的ip(或机器名)作为参数传入脚本，
+      并期待脚本将其机架信息打印到标准输出。
+    hadoop-site.xml中添加
+      topology.script.file.name
+        脚本路径, 不管采用什么脚本，只要将其打印到标准输出即可。
+      topology.script.number.args
+        最大机器数量，避免脚本bug导致的问题
+
+
+3. Hadoop配置
+  3.1 配置管理
+    所有配置文件都集中放置在本地hadoop/conf目录(也可通过--config选项指定目录)
+    也就是说，配置文件没有统一保存，而是通过同步来保持一致。
+    而且大量的机器可能自身体质也不相同，这还需要为配置文件进行分类。
+    这些操作都可通过第三方工具来实现(推荐)
+    
+  3.2 控制脚本
+    所有控制脚本都放在hadoop/bin目录下，
+    例如start-dfs.sh, 用于启动集群上所有的HDFS守护进程，包括namenode, 和 datanode
+    而哪个服务器是namenode, 哪个服务器又是datanode呢，这个有conf目录下的masters, slaves文件定义。
+    (masters, slaves是给控制脚本使用的，并非必须)
+    
+  3.3 环境设置
+    都放置在hadoop-env.sh中
+    3.3.1 内存
+      默认是每个守护进程1000MB, map任务和reduce任务都是200MB
+      1. 工作节点的内存使用量
+        默认下，一个工作节点的内存占有量 datanode(1000MB) + tasktracker(1000MB) + 2个map任务(2*200MB) + 2个reduce任务(2*200MB) = 2800MB
+        实际上, datanode往往会设置更大，任务数也会根据CPU核数，设置得更大。
+      2. 主节点的内存使用量
+        namenode, 辅助namenode, jobtracker，各1000MB。
+        实际上, namenode往往内存会设置得更大。
+    3.3.2 日志
+      1) 日志位置
+        hadoop-env.sh中的HADOOP_LOG_DIR, 默认为${HADOOP_HOME}/logs
+      2) .log日志
+        所有程序里prinf的日志都在这里，命名如: hadoop-hadoop-namenode-hujj.hadoop.master.log
+        格式为hadoop-user-守护进程名-机器名.log, 其中user由hadoop-env.sh中的HADOOP_IDENT_STRING设置，默认为当前用户。
+        命名格式在有多个配置文件的场景下非常有用。
+        如果到了第二天，就会将前一天的日志mv到如 *.log.2014-03-17 的位置
+        hadoop不会主动删除日志，交由维护人员管理。
+      3) .out日志
+        实际上是标准输出和标准错误的重定向。因此里面的内容很少，甚至为空。
+        每次重启时，都会创建一个.out文件，而旧的文件，会命名为.out.1 - .out.5，其中.5最旧。只维护5个历史副本。
+        (通过这个文件，也可看出什么时候hadoop重启了)
+    3.3.3 关键的配置文件
+      core-site.xml               HDFS和MapReduce常用的I/O设置
+      hdfs-site.xml               namenode、辅助namenode、datanode的设置
+      mapred-site.xml             jobttracker、tasktracker的设置
+      hadoop-env.sh               给启动脚本使用的配置
+      masters                     辅助namenode列表
+      slaves                      datanode和tasktracker列表
+    3.3.4 Hadoop守护进程的地址和端口
+      守护进程一般同时运行RPC和HTTP两个服务器。
+      RPC服务器支持守护进程间的通信
+        namenode: 8020
+        jobtracker: 8021
+        datanode: 50020
+      HTTP服务器通过Web方式提供与用户
+        jobtracker: 50030
+        tasktracker: 50060
+        namenode: 50070
+        datanode: 50075
+        辅助namenode: 50090
+  
+  3.4 其他属性
+    ..
+   
+  3.5 安全性
+    安全问题，还是交给运维统一管理吧。
+    
+  3.6 基准测试程序
+    3.6.1 HDFS的I/O性能测试(DFSCIOTest)
+      ./hadoop jar ../hadoop-test-1.0.1.jar TestDFSIO -write -nrFiles 10 -filesize 10
+      map的任务是读或写文件, reduce汇总读写信息，并产生一份报告。
+    3.6.2 MapReduce性能测试
+      ..
+      
+  3.7 云端上的Hadoop
+    一些组织和个人，没必要搭建自己的Hadoop，可以使用现成的系统，以租凭的形式使用Hadoop服务。
+    如Amazon EC2 
+    
+  
+   
+
+  
+  
+  
+  

@@ -1,0 +1,146 @@
+1. 安装
+  $wget http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz  
+  $tar -zxvf protobuf-2.5.0.tar.gz  
+  $cd protobuf-2.5.0  
+  $./configure  
+  $sudo make  
+  $sudo make install  
+  
+ 
+2. 简单的helloworld
+  2.1 按照命名规范,  packageName.MessageName.proto, 创建一个新的.proto文件
+    >vi lm.helloworld.proto
+    
+      package lm; 
+      message helloworld 
+      { 
+        required int32     id = 1;   // ID 
+        required string    str = 2;  // str 
+        optional int32     opt = 3;  //optional field 
+      }
+
+  2.2 编译它 (当然不能用gcc编译，要用protoc，java等系统类同)
+      protoc -I=$SRC_DIR --cpp_out=$DST_DIR $SRC_DIR/addressbook.proto
+      输出了两个文件, lm.helloworld.pb.h, lm.helloworld.pb.cc
+      
+  2.3 观察lm.helloworld.pb.h
+      // 所有代码都在lm当中
+      namespace lm {
+        // 有一个类 helloworld, 继承与Message
+        class helloworld : public ::google::protobuf::Message {
+
+          // 对第一个字段id的操作，其他字段类同
+          inline bool has_id() const;
+          inline void clear_id();
+          static const int kIdFieldNumber = 1;
+          inline ::google::protobuf::int32 id() const;
+          inline void set_id(::google::protobuf::int32 value);
+        }
+      }
+    
+  2.4 Writer()
+    #include "lm.helloworld.pb.h"
+    #include <iostream>
+    #include <fstream>
+    using namespace std;
+
+    int main(void)
+    {
+      lm::helloworld msg1;
+      msg1.set_id(101);
+      msg1.set_str("hello");
+
+      // Write the new address book back to disk. 
+      fstream output("./log", ios::out | ios::trunc | ios::binary);
+
+      if (!msg1.SerializeToOstream(&output))
+        return -1;
+
+      return 0;
+    }
+ 
+  2.5 Reader()
+    #include "lm.helloworld.pb.h"
+    #include <iostream>
+    #include <fstream>
+    using namespace std;
+
+    int main(int argc, char* argv[]) {
+      lm::helloworld msg;
+
+      fstream input("./log", ios::in | ios::binary);
+      if (!msg.ParseFromIstream(&input))
+        return -1;
+
+      cout << msg.id() << endl;
+      cout << msg.str() << endl;
+    }
+    
+  2.6 编译运行
+    g++ Writer.cc lm.helloworld.pb.cc -lprotoc -oWriter
+    g++ Reader.cc lm.helloworld.pb.cc -lprotoc -oReader
+    ./Writer
+    ./Reader
+    
+    
+3. 嵌套Message
+  必须嵌套，否则没法用了
+  
+  3.1 一个例子
+    message Person { 
+      required string name = 1; 
+      required int32 id = 2;
+      optional string email = 3; 
+
+      enum PhoneType { 
+        MOBILE = 0; 
+        HOME = 1; 
+        WORK = 2; 
+      } 
+
+      message PhoneNumber {               --> 语法上必须显式声明一下，这点比较痛苦
+        required string number = 1; 
+        optional PhoneType type = 2 [default = HOME]; 
+      } 
+      
+      repeated PhoneNumber phone = 4;     --> 指明phone是PhoneNumber类型，而且还是repeated字段
+    }
+
+  3.2 编译后看看头文件
+    protoc --cpp_out=. lm.person.proto 
+    vi lm.person.pb.h 
+    
+    // 生成了两个类
+    class Person;
+    class Person_PhoneNumber;
+    
+    // 可以通过一个迭代器，遍历所有元素
+    inline ::google::protobuf::RepeatedPtrField< ::lm::Person_PhoneNumber >* mutable_phone();
+      
+
+前面先通过protoc, 生成了.h和.cc文件，这就决定了.cc的内容在运行时不可改变，改变它必须重新编译(也就是所谓的静态)
+下面介绍两种动态的方式，自描述和动态编译
+
+4. 自描述
+  每次将格式信息，也一同放入到message。显而易见，message的大小会增大许多。
+
+
+5. 动态编译
+  通过import的方式，直接导入.proto文件，可以做到动态编译。
+  和自描述相比，message的大小不会增大，但解析的过程会增长。
+  
+  
+6. 三种方式的比较
+  6.1 空间
+    自描述会增加一个固定的格式头部，大概在几百字节。若每条数据信息量较少，则空间的比例相对较大。
+    静态和动态没有这个问题。
+    
+  6.2 时间
+    动态的性能大概只有静态的1/4。
+    
+  6.3 开发效率
+    显然静态最简单。
+    
+  总结: protobuf往往使用在内部网络，编译的问题相对较弱。
+  动态方式虽然提供了更大的灵活性，但其缺点也是显而易见的。因此，除非特别必要，一般应该以静态为主。
+  protobuf也不建议使用在对外通讯上。

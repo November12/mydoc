@@ -1,0 +1,134 @@
+<<Boost程序库完全开发指南>>
+
+第二章 时间与日期
+   C++一直没有时间库，Boost的timer库和date_time库完美的解决了这个问题。
+2.1 timer库
+  timer库是一个很小的库，只有3个组件，但大多数情况下，已经足够了。
+  2.1.1 timer
+    可以提供毫秒级的精度, 但最大可测量程度只有几百个小时, 而且使用了std::clock()来作为计时依据,移植性不好。
+    std::clock()返回至进程启动以来的嘀嗒数，每秒的嘀嗒数由宏CLOCK_PER_SEC定义，这个宏的值在windows和linux下不同，因此不能移植。
+    #include <boost/timer.hpp>
+    timer t;            // 声明对象时即开始计时
+    t.elapsed_max();    // 返回可度量的最大值(单位:小时)
+    t.elapsed_min();    // 返回可度量的最小单位(单位: 秒)
+    t.elapsed();        // 输出流逝的时间(单位: 秒)
+    
+  2.1.2 progress_timer
+    继承于timer，使用更简单，悉构的时候打印时间，可以指定打印的位置
+
+  2.1.3 progress_display
+    可以显示一个进度条(很有趣，但也很画蛇添足的功能)。几乎不会被使用。
+    
+2.2 日期-时间库
+  日期和时间共用一个date_time库。
+  enum {
+    pos_infin;          // 正无限
+    neg_infin;          // 负无限
+    not_a_date_time;    // 无效时间
+    min_date_time;      // 最小日期或时间
+    max_date_time;      // 最大日期或时间
+  }
+    
+2.3 日期
+  2.3.1 date(时间点)
+    一个轻量级的对象，很小，很高效，完全可以把它当作int, string那样的类去使用
+    通过day_clock::local_day() 和 day_clock::universal_day()可以获取本地日期和UTC日期 (通过调用localtime()和gmtime()来实现的)
+    
+  2.3.2 date_duration(天), weeks, months, years(时长)
+    时间点 + 时长 = 时间点
+    时长 + 时长 = 时长
+    date d(2000,1,1);
+    d += weeks(3);
+    
+  2.3.3 date_period (时间段)
+    是一个左闭右开的区间。
+    时间段 && 时间段 = 时间段
+    时间点 属于 时间段
+    
+  2.3.4 date_iterator, week_iterator, month_iterator, year_iterator(时间迭代器)
+    遍历每一天时，非常有用。
+
+2.4 时间
+  ...
+  
+  
+第三章 内存管理
+包括smart_ptr库和pool库
+
+smart_ptr库:
+  C++98中提供了auto_ptr来释放内存，boost库共有6种智能指针，来弥补auto_ptr的不足。
+  scoped_array, shared_array用于释放数组，但并不安全，因此一般情况下不会使用。
+  #include <boost/smart_ptr.hpp>
+  3.1 scoped_ptr
+    scoped_ptr不允许赋值和拷贝(noncopyable)，只能在scoped_ptr声明的作用域内使用，
+    scoped_ptr和auto_ptr用法上非常相像，也都不能用于容器。但scoped_ptr更安全，因为它指针的所有权不可能转移。
+    
+  3.2 shared_ptr
+    最有用的智能指针，也是真正意义上的智能指针。因为它实现了引用计数。
+    3.2.1 make_shared
+      shared_ptr可以很好的消除delete，但创建时还是需要New，这使得代码看起来很不对称，使用make_shared可以消除这种不对称。
+      shared_ptr<vector<int> > p = make_shared<vector<int> >(10,2);
+      这样，代码中就再没有new和delete了
+    3.2.2 应用在容器中
+      shared_ptr支持赋值以及比较函数，因此可以直接作为对象保存在容器中，性能也非常高。auto_ptr和scoped_ptr都不能实现这样的操作。
+    3.2.3 应用于桥接模式
+      shared_ptr很好的解决了桥接模式中指针的共享和引用计数的问题。
+    3.2.4 应用于工厂模式
+      工厂模式必须要new出来一个对象，而delete总是被遗漏。通过create一个shared_ptr, 从而解决这个问题。
+    3.2.5 删除器
+      shared_ptr的第二个参数可以指定一个函数指针或者函数对象，作为删除器。(实际上就是析构的时候用f(p)替代delete p)
+      int fd = open();
+      shared_ptr<socket_t> p(fd, close_fd);
+      由于传入的是一个void*类型，因此，不仅仅可以实现删除器的工作，还可以将任意期望的操作放着这里。
+  3.3 weak_ptr
+    负责管理shared_ptr对象，可以提供一些特殊的用法
+    3.3.1 知道管理的shared_ptr是否已经被释放
+      shared_ptr<int> sp(new int(10));
+      weak_ptr<int> wp(sp);
+      if (!wp.expired())
+      {
+        shared_ptr<int> sp2 = wp.lock();
+        do sp2...
+      }
+    3.3.2 获得this的shared_ptr
+      某些场合，对象需要获取自己的shared_ptr
+      
+pool库
+  使用pool库，可以完全不需要考虑delete的问题。(垃圾回收机制)
+  可以作为STL的内存分配器。
+  3.4 pool
+    等同于C的malloc，只用于分配空间(void*)，并不会执行构造函数
+    pool<> p1(sizeof(int));           // 分配int的内存池
+    int *p = (int*)p1.malloc();       // 
+    p1.free(p);                       // 显式释放，不执行的话，会在析构的时候释放所有
+  3.5 object_pool
+    为对象分配空间，会调用构造函数
+  3.6 singleton_pool
+    和pool一样，但它是一个单件，并且线程安全
+  3.7 pool_alloc
+    可替代STL的内存分配器，但通常STL自己的内存分配器工作得更好
+    
+第四章 实用工具
+  程序员应该把自己从单调的复制粘贴工作中释放出来，boost的实用工具，不仅仅好用，还是学习编程的好教材。
+  4.1 noncopyable
+    几乎任何库都需要这个函数，用途也不用多说了。
+    当我们声明一个对象的时候，编译器会自动的帮我们创建两个空的函数，拷贝构造函数，和赋值函数。
+    noncopyable就是为了避免两个函数的自动创建，以避免不希望的调用。
+    
+  4.2 typeof
+    C++是静态强类型语言，会有运行速度快，代码规范等优点。但声明类型有时候会非常繁琐，特别是使用名字空间之后。
+    为了简化声明，C++0x可能会引入两个新的关键字，typeof, auto
+    typeof(1+2) i = 1+2;
+    auto i = 1+2;
+    boost库通过两个宏模仿了这两个操作，BOOST_TYPEOF(expr), BOOST_AUTO(var, expr)
+    BOOST_TYPEOF(2.0*3) x=2.0*3;
+    BOOST_AUTO(y,2+3);
+    
+  4.3 
+      
+    
+    
+  
+  
+  
+  

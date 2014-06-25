@@ -1,0 +1,39 @@
+1. Snapshot                             ★   
+Journaling must be Enabled
+需要lvm等功能的支持, 暂时不予考虑
+
+2. Mongodump/MongoRestore             ★★★★  (同mysql，dump备份的最大好处是可以精确备份其中的一部分)
+可以为cluster/server/database/collection(or part of a collection with a query)进行备份
+备份的来源:
+1. 运行中的数据库              -- 热备份，通过网络接口
+2. 数据库文件目录              -- 需要停机
+
+dump的文件格式是bson
+
+可以做point-in-time的备份  (--oplog)
+
+3. Shutdown Backup                  ★★★★★  (最原始的方法，往往是最可靠、最有效的方法)
+停机 -> copy Data目录 -> 运行
+很安全的方法，但属于冷备份
+
+4. fsync + lock                     ★           (目前有bug，观望中...)
+fsync 是把数据全部flush到磁盘上
+lock 是拒绝所有写数据库的操作，但读不受影响
+通过fsync + lock 可以创建出snopshot
+
+db.fsyncLock()      // 等同于db.adminCommand({fsync:1, lock:true})
+db.fsyncUnlock()
+
+目前这种方式有bug，会把所有读操作block住。(bug: https://jira.mongodb.org/browse/SERVER-4243)
+而且阻止写操作，如果避免读出脏数据，也有待验证。
+
+5. Slave Backup                     ★★★★★   (和其他方法不冲突，架构的基础)
+最后的备份手段了。而且以上备份方法，也建议在slave上完成。(要注意备份的时候oplog会增加，不要因为oplog溢出导致slave数据无法更新)
+
+
+
+
+
+
+
+

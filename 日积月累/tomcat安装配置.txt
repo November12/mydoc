@@ -1,0 +1,38 @@
+1. 安装
+  下载位置: http://tomcat.apache.org/download-60.cgi
+  window下载zip格式的文件, 32-bit_Windows.zip
+  解压缩即可!
+
+
+2. 配置
+  CATALINA_HOME   配置成  tomcat解压缩目录
+
+
+3. 启动 & 关闭
+  在bin目录下，执行 (最好是通过dos窗口执行，这样可以看到启动信息)
+    startup.bat
+    shutdown.bat
+  即可
+
+
+4. 验证
+  http://127.0.0.1:8080/
+
+
+5、目录结构
+  bin:      可执行程序
+  conf：    全局配置。
+  lib       运行所需的jar包(全局的，所有在此Tomcat上的站点共享)
+  log:      日志
+  webapps:  默认的站点根目录
+  work:     工作区，缓存编译的结果(第二次快，就因为这个)
+
+
+6. 站点结构
+  拥有一个名为WEB-INF的子文件夹，该子文件夹下必须有一个名为web.xml的文件(conf下还有一个全局的web.xml)
+  project/
+    index.jsp
+    WEB-INF/
+      web.xml
+
+  

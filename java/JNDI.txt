@@ -1,0 +1,63 @@
+0.0 什么是命名服务
+  命名服务将名称和对象联系起来，使得我们可以用名称访问对象。
+  目录服务是命名服务的自然扩展。两者之间的关键差别是目录服务中对象可以有属性（例如，用户有email地址），而命名服务中对象没有属性。因此，在目录服务中，你可以根据属性搜索对象。
+  命名或目录服务使用户可以集中存储共有信息。在分布式的时代这点必不可少。
+  
+
+1. JNDI简介
+  Java命名和目录接口, Java Naming and Directory Interface.
+  为分布式对象提供了统一的访问接口。
+
+
+2. JNDI程序包
+  javax.naming
+    命名操作。包含了访问命名服务的类和接口。例如，它定义了Context接口，这是命名服务执行查询的入口。
+  javax.naming.directory
+    目录操作。对命名包的扩充，提供了访问目录服务的类和接口。例如，它为属性增加了新的类，提供了表示目录上下文的DirContext接口，定义了检查和更新目录对象的属性的方法。
+  javax.naming.event
+    在命名目录服务器中请求事件通知。提供了对访问命名和目录服务时的事件通知的支持。例如，定义了NamingEvent类，这个类用来表示命名/目录服务产生的事件，定义了侦听NamingEvents的NamingListener接口。
+  javax.naming.ldap
+    提供LDAP支持。这个包提供了对LDAP版本3扩充的操作和控制的支持，通用包javax.naming.directory没有包含这些操作和控制。
+  javax.naming.spi
+    允许动态插入不同实现。这个包提供了一个方法，通过javax.naming和有关包动态增加对访问命名和目录服务的支持。这个包是为有兴趣创建服务提供者的开发者提供的。
+
+
+3. JNDI架构
+  JNDI API
+    最上层是JNDI的API, 以统一的用户接口，提供透明的服务。
+  Naming Manager
+    负责JNDI API 与 JNDI SPI两者之间的转换
+  JNDI SPI
+    服务的提供者
+
+
+4. JNDI可访问的现有的目录及服务
+  DNS
+  XNam
+  Novell目录服务
+  LDAP(Lightweight Directory Access Protocol轻型目录访问协议)
+  CORBA对象服务
+  文件系统
+  Windows XP/2000/NT/Me/9x的注册表
+  RMI
+  DSML
+  v1&v2
+  NIS
+
+
+5. JNDI和JDBC的比较
+  使用JDBC，需要如何编程
+    conn=DriverManager.getConnection("jdbc:mysql://MyDBServer?user=qingfeng&password=mingyue");
+    ...
+  这里有一些问题
+    1. JDBC URL包含服务器名称，用户名，密码等信息。
+    2. 如果采用别的数据库，需要修改JDBC驱动程序包
+  程序员必须知道用的什么数据库，数据库地址是哪里，用户名密码是什么。
+  
+  而如果使用JNDI, 这些问题都不存在了，这些通过配置文件都可以搞定。
+    
+  
+  
+  
+    
+

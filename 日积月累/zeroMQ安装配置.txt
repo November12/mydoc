@@ -1,0 +1,29 @@
+1. 获取代码
+  wget http://download.zeromq.org/zeromq-2.1.7.tar.gz
+  
+2. 安装
+  tar -xzf zeromq-2.1.7.tar.gz
+  cd zeromq-2.1.7
+  ./configure
+  make
+  make install
+  
+
+  
+
+  
+  
+  
+  
+  
+  
+  
+1. 获取代码
+  git clone https://github.com/nathanmarz/jzmq.git
+
+2. 安装
+  cd jzmq
+  ./autogen.sh
+  ./configure
+  make
+  make install

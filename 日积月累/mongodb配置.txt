@@ -1,0 +1,30 @@
+## Sharding的配置 ##
+
+1. 启动所有进程
+./mongod --config ./config_file/rs1_1.conf
+./mongod --config ./config_file/rs1_2.conf
+./mongod --config ./config_file/rs1_arb.conf
+
+./mongod --config ./config_file/rs2_1.conf
+./mongod --config ./config_file/rs2_2.conf
+./mongod --config ./config_file/rs2_arb.conf
+
+./mongod --config ./config_file/config1.conf
+./mongod --config ./config_file/config2.conf
+./mongod --config ./config_file/config3.conf
+
+./mongos --config ./config_file/mongos1.conf
+./mongos --config ./config_file/mongos2.conf
+
+
+2. 组成replica set
+./mongo 192.168.1.12:10011/admin < config_file/buildrs1.js
+./mongo 192.168.1.12:10021/admin < config_file/buildrs2.js
+
+
+3. 添加分片
+./mongo 192.168.1.12:10000/admin < ./config_file/buildmongos.js
+
+查看
+db.printShardingStatus()
+db.printShardingStatus({verbose:1})

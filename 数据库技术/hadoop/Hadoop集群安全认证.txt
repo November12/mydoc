@@ -1,0 +1,24 @@
+参考文献: 
+  Hadoop Security Design, Owen O’Malley, Kan Zhang, Sanjay Radia,Ram Marti, and Christopher Harrell Yahoo!
+  
+
+1. Hadoop有哪些安全风险
+  1) 用户可以随意伪装成其他用户访问HDFS和MapReduce。(Hadoop借用linux账号名做身份认证)
+  2) 黑客可以伪装为某种Hadoop服务，如NameNode, DataNode，TaskTracker, JobTracker。(能做什么相信大家都能想得到)
+
+  
+2. 期望的安全控制
+  1) 按用户权限访问HDFS
+  2) 用户只能查看和修改自己的jobs
+  3) 集群内部不能有非法的Hadoop server
+  4) 安全控制不能大幅降低集群的效能 (<3%)
+  
+3. Kerberos
+  使用Kerberos而不使用SSL的原因在于:
+    性能更好。Kerberos使用对称密钥，而SSL采用非对称密钥
+    集中式用户管理。SSL权限散落在每台server上。
+    
+    
+4. 
+
+5. 

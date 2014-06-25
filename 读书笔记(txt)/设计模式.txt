@@ -1,0 +1,261 @@
+面向对象的设计原则:
+1. "开闭"原则: 对扩展要开放，对修改要关闭。
+
+
+1. 简单工厂模式
+思想: 将类的声明放在运行时，而不是编译时。提高了灵活性。
+由3部分组成
+基类: base
+  统一接口，如果子类的接口都不一样，代码就没法写了。
+子类: 
+  具体的实现类，要实现所有父类的接口
+工厂类:
+   需要一个create方法，根据不同的参数，决定New出不同的子类来(外观上看，都是父类)
+
+
+
+2. 桥接模式
+思想: 多重继承往往不是好的选择，多考虑使用成员变量。
+桥接模式的结构犹如我们日常生活中的一座桥一样，桥的两边各有各的生活，任何一边发生改变的话，都不会对另一边造成影响
+面向对象设计原则中有一个原则，类的单一职责原则，即一个类应当仅有一个引起它变化的原因。
+但有时候会有多种因素导致变化，这时候我们就要把这些变化都抽象成一个个的变化(类)，再把它们结合(桥接)起来。
+比如用画笔画画，画笔有粗细之分，颜色有12种。paint()函数有2*12种变化。如果用工厂模式，要写出24个子类出来才行。(这也是工厂模式的局限性，new出来的对象必须是具体实现的对象)
+如果我们有一个桥接的类，其中有画笔对象和颜色对象。这样我们只需实现2+12个类即可。
+说白了，桥接模式就是建议大家使用成员变量，而不是多重继承。
+
+DIP原则 - 依赖倒转原则
+高层次模块往往依赖于低层次模块，抽象模块往往依赖于具体模块。
+这显然是不对的，就好比一个公司的底层去指导高层干活。
+
+
+
+
+3.备忘录模式
+思想: 将类的实现和类的状态分离。降低耦合性，使程序更加清晰。
+保留历史纪录，以便回滚。如事务处理，ctrl+z
+
+由3部分组成
+源: Originator
+  主体
+备忘录: Memento
+  纪录历史切片
+管理者: Caretaker
+  管理所有的历史切片
+
+
+4. 单例模式
+思想: 替代全局对象，有着比全局对象更好的封装，并且更安全(所有的误操作都被禁止了)
+mysql中一张更新频率非常低的表(股票基本表，一天更新一次即可), 如果每次都去数据库查询，每天需要查询数据库100万次以上。
+
+整个程序只需要一个对象。多线程的访问，导致对象的创建和更新需要加锁。二级锁在这里是一个好的方法。
+class Singleton {
+  private:
+     Singleton() {}                               // 私有的构造函数避免外界直接实例化对象
+     
+  private:
+    volatile static Singleton *instance = NULL;   // volatile 确保两级锁的正确性
+
+  public:
+    Singleton *getInstance()                      // 整个类，就实现了这一个接口
+    {
+      if (instance == NULL) 
+      {
+        lock();
+        if (instance == NULL)                     // 两级锁机制，实现了逻辑也保证了效率
+        {
+          instance = New Singleton();
+        }
+        unlock();
+      }
+    }
+};
+
+5. 观察者模式
+思想: 用'一'来管理'多', 充分的利用了类的多态性。
+刚刚收到政府的加息消息，必须以用户最习惯的方式，以最快的速度通知所有的客户。(短信, 邮件, 电话 ...)
+文档 - 视图 也是典型的观察者模式。
+
+由3部分组成:
+管理者: 把所有的观察者都放到容器里，统一管理。
+  class ConcreteWatched: public AbstractWatched 
+  {
+    List<AbstractWatcher> list;                             // 保存观察者的容器
+    addAbstactWatcher(AbstractWatcher watcher);             // 管理对象最基本的3个方法
+    removeAbstactWatcher(AbstractWatcher watcher);
+    removeAll();
+    notifyWatchers();                                       // 通知所有对象(通过观察者的update())
+  };
+
+观察者的基类:
+  class AbstractWatcher {   
+      update() = 0;                                           
+  };
+
+观察者:
+  class ConcreteWatcher: public AbstractWatcher {
+    update();                                               // 个性化的update
+  };  
+  
+  
+6. 原型模式
+不会调用构造函数，性能比创建新的对象好。
+通过普通的函数，巧妙的避开了调用构造函数。但是却引入了New操作。使得释放空间更加难得管理。
+作为c/c++程序员，更喜欢拷贝构造函数，赋值函数，甚至New(buf)来解决拷贝的问题。原型模式不会被考虑。(可能是唯一不会被考虑使用的设计模式)
+
+class Prototype 
+{
+  public:
+    virtual Prototype* Clone() = 0 ;  // 抽象基类, 通过一个普通的函数接口，来实现浅拷贝或者深拷贝。避开了构造函数。
+} ;
+
+class ConcretePrototype2 : public Prototype
+{
+  public:
+    virtual Prototype* Clone()        // 为了实现这个接口，不可避免的需要New操作符来开辟空间，对于有垃圾回收机制的java来说，这不是个问题。但对于C++，这是个大问题。
+    {
+      ConcretePrototype2 *p = new ConcretePrototype2();
+      *p = *this ; //复制对象
+      return p ;
+    }
+}
+
+7. 适配器模式
+不用学，都会常常用到的模式。非常简单，就是将一种接口转换成另一种接口。
+由3部分组成: 源(Adaptee), 目标(Target), 适配器(Adapter)
+
+客户端需要显示跑马灯，需要实现如下接口:
+
+class Target()        // 目标(Target)
+{
+public: 
+  Get(int language, string category, vector<int> fields) = 0;
+};
+
+为股票新闻有类似接口
+class NewsAdvistory()    源(Adaptee)
+{
+public: 
+  Get(int language, string category, string stock, vector<int> fields);  // 如果stock为空，则完全符合跑马灯的取数逻辑
+};
+
+为此，实现了一个适配器
+class NewsRace: public Target     // 要实现目标，所以继承了目标
+{
+public:
+  Get(int language, string category, vector<int> fields)
+  {
+    return NewsAdvistory::Get(language, category, "", fields);
+  }
+};
+
+8. 迭代器模式
+思想: 如果每个容器都遵守标准，我们就可以用标准访问所有的容器。
+通过统一的接口去访问(遍历)容器元素，无需考虑容器的内部结构。
+由3部分组成:
+1. 迭代器基类，这也是最重要的类，提供了一套实现容器时需要遵守的规范。
+比如可以顺序访问的迭代器，至少需要这些接口
+template <typename T>
+class forward_iterator
+{
+    operator++() = 0;         // 向前遍历
+    T operator*() = 0;        // 通过*iter获取当前元素内容
+};
+class bid_iterator: public forward_iterator
+{}          // 双向访问的，除了begin()这套接口，还要实现rBegin()这套接口
+
+2. 容器类
+对于一个需要实现forward_iterator的容器类
+template <typename T>
+class List
+{
+  list;               // 存储对象
+  typedef ListIterator<T> iterator;  // iterator是所有容器必须声明的成员，显然，这里的ListIterator需要实现forward_iterator
+  Begin() {return iterator(list[0])};            // 通过for(begin; !=end; ++iter)遍历
+  End();
+};
+
+3. 容器的迭代器实现
+template <typename T>
+class ListIterator: public forward_iterator
+{
+  ListIterator(node);                               // 显然，迭代器需要操作List类的成员list;
+  operator++(); {node = node.next; return *this;}  
+  T operator*() {return node.data;}
+  list_node node;
+};
+
+
+9. 策略模式
+思想: 
+将算法封装起来。可以动态的set某个算法，也可以自行添加算法而不改变原代码。为的是改变对象的行为。
+超市有上百万种物品，为了计算价格，不可能为每种商品都创建一个类, 即使创建了,也无法维护。
+
+
+
+10. 状态模式
+状态迁移是个很难，也很容易出错的问题。我们可以通过函数，将所有的状态都描述清楚，但这样做往往很容易出错，添加新的状态，测试状态都不容易。
+状态模式将状态的迁移分离出来，简化了逻辑。
+客户端升级，分为普通升级和紧急升级。升级时需要提供不同的对话框，以及倒计时。当用户选择否时，还需要多次，分不同间隔继续提示升级信息。通过剥离状态，简化了实现，使程序更容易维护，使状态机更容易测试。
+
+七彩灯:
+push()
+{
+  if (state = 红色) state = 黄色;
+  else if (state = 黄色) state = 绿色; 
+}
+不用状态模式，则需要列举所有的状态迁移。这是个很可怕的工作。
+
+用到了状态:
+push()
+{
+  state.push();   // 7个状态，就有了7个类，每个类只需要关心自己的状态迁移。容易测试，也不容易出错。
+}
+           
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 一、Singleton，单例模式：保证一个类只有一个实例，并提供一个访问它的全局访问点 
+    二、Abstract Factory，抽象工厂：提供一个创建一系列相关或相互依赖对象的接口，而无须指定它们的具体类。 
+    三、Factory Method，工厂方法：定义一个用于创建对象的接口，让子类决定实例化哪一个类，Factory Method使一个类的实例化延迟到了子类。 
+    四、Builder，建造模式：将一个复杂对象的构建与他的表示相分离，使得同样的构建过程可以创建不同的表示。 
+    五、Prototype，原型模式：用原型实例指定创建对象的种类，并且通过拷贝这些原型来创建新的对象。 
+行为型有： 
+    六、Iterator，迭代器模式：提供一个方法顺序访问一个聚合对象的各个元素，而又不需要暴露该对象的内部表示。 
+    七、Observer，观察者模式：定义对象间一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都得到通知自动更新。 
+    八、Template Method，模板方法：定义一个操作中的算法的骨架，而将一些步骤延迟到子类中，TemplateMethod使得子类可以不改变一个算法的结构即可以重定义该算法得某些特定步骤。 
+    九、Command，命令模式：将一个请求封装为一个对象，从而使你可以用不同的请求对客户进行参数化，对请求排队和记录请求日志，以及支持可撤销的操作。 
+    十、State，状态模式：允许对象在其内部状态改变时改变他的行为。对象看起来似乎改变了他的类。 
+    十一、Strategy，策略模式：定义一系列的算法，把他们一个个封装起来，并使他们可以互相替换，本模式使得算法可以独立于使用它们的客户。 
+    十二、China of Responsibility，职责链模式：使多个对象都有机会处理请求，从而避免请求的送发者和接收者之间的耦合关系 
+    十三、Mediator，中介者模式：用一个中介对象封装一些列的对象交互。 
+    十四、Visitor，访问者模式：表示一个作用于某对象结构中的各元素的操作，它使你可以在不改变各元素类的前提下定义作用于这个元素的新操作。 
+    十五、Interpreter，解释器模式：给定一个语言，定义他的文法的一个表示，并定义一个解释器，这个解释器使用该表示来解释语言中的句子。 
+    十六、Memento，备忘录模式：在不破坏对象的前提下，捕获一个对象的内部状态，并在该对象之外保存这个状态。 
+结构型有： 
+    十七、Composite，组合模式：将对象组合成树形结构以表示部分整体的关系，Composite使得用户对单个对象和组合对象的使用具有一致性。 
+    十八、Facade，外观模式：为子系统中的一组接口提供一致的界面，fa?ade提供了一高层接口，这个接口使得子系统更容易使用。 
+    十九、Proxy，代理模式：为其他对象提供一种代理以控制对这个对象的访问 
+    二十、Adapter,适配器模式：将一类的接口转换成客户希望的另外一个接口，Adapter模式使得原本由于接口不兼容而不能一起工作那些类可以一起工作。 
+    二十一、Decrator，装饰模式：动态地给一个对象增加一些额外的职责，就增加的功能来说，Decorator模式相比生成子类更加灵活。 
+    二十二、Bridge，桥模式：将抽象部分与它的实现部分相分离，使他们可以独立的变化。 
+    二十三、Flyweight，享元模式
+

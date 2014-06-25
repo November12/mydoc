@@ -1,0 +1,257 @@
+1. 简介
+  1.1 什么是Python
+    Python是一种面向对象的，解释性语言。
+    虽然是解释性语言，但Python也有虚拟机的概念，也需要先编译成字节码再运行。(这点和java非常像)
+    毫无疑问，因为有虚拟机，跨平台非常容易。
+
+  1.2 Python的应用范围
+    Python无所不能，所有的任务Python都可以解决。(当然，能解决和应该用来解决是两码事)
+    Python是作为一种应用程序编程语言而开发的。目标是隐藏操作系统的复杂性。(快速开发、隐藏复杂性)
+    作为解释性语言，Python性能上当然无法和C++，java相比，但开发速度是C++等无法比拟的。
+    
+    
+2. 执行Python程序
+  2.1 如何执行
+    1) 执行命令 python, 进入解释器环境
+    2) 直接执行.py脚本，第一行加上 #!/usr/local/bin/python， 直接执行。 (和shell一样)
+    
+  2.2 Python解释器
+    2.2.1 命令行选项 (只列出重要的)
+      -d          产生调试信息
+
+
+3. Python程序介绍
+  3.1 数据类型
+    Python是弱类型的，无需之前声明。数据类型分得也没有C++那么细
+    所有的数据类型都是对象，对其操作都是引用方式
+      integer=12345                                                   # 整型一律32位
+      integer=0x7f
+      integer=0366
+      long=12345678901234567890123456789012345678901234567890L        # 多少位都可以
+      float=123.45
+      float=123.45#-67
+      cplx=1.2+3.4j                                                   # 还支持复数
+      string='hello'                                                  # 单引号、双引号均可, \转义
+      list=[1,'two',3]                                                # 支持append、extend、index、insert、pop、remove、reverse、sort操作
+      dictionary={'one':1,'two':2,'three':3}                          # 支持has_key、keys、values、clear、copy、update、get操作
+      tuple=(1,'two',3)                                               # 等同于不能修改的list
+      
+  3.2 运算符 (特殊的)
+    逻辑运算符        or,and,not
+    位运算符          |,&,^(异或)
+    特殊              is(is not), in(not in), **(幂)
+    值得一提的是，Python也支持运算符重载，这可是java都不具备的功能。
+    
+  3.3 语句
+    语句结束            行末自动结束, 跨行加\
+    注释                #
+    if语句              
+                        if exp:
+                          ...
+                        elif exp:
+                          ...
+                        else:
+                          ...
+    while语句
+                        while exp:
+                          ...
+                        else:                 # exp为假，执行else; break，不执行else
+                          ...
+    for语句
+                        for i in object:      # oboject也可写为 range([start,]stop[,step])
+                          ...
+                        else:
+                          ...
+    循环控制语句        break                 # 退出循环，忽略任何else
+                        continue              
+                        pass                  # 空语句，不做任何事情
+    
+  3.4 
+  
+  
+  
+4. 函数
+  4.1 函数定义
+    def name(arg1, ...):
+      ...
+      [return value]
+  
+  4.2 作用域
+    分类: 局部(Local)、全局(Global)、内置(Built-in)
+  
+    name='unknown'
+    def set_name():
+      global name             # 这里必须声明global，否则name为局部变量
+      name='hujj'       
+    
+  4.3 参数
+    ...
+    
+    
+5. 模块
+  模块也就是其他的.py脚本文件
+  
+  5.1 import方法
+    import ftplib                   # 注意，不是ftplib.py，命名空间为ftplib
+    import ftplib as ftp            # 导入的是ftplib.py, 但命名空间是ftp
+    from foobar import foo,far      # 导出函数和对象foo,far到当前命名空间
+    from foobar import *            # 同上
+    reload(foolib)                  # 重新加载模块
+    注意，自己写脚本的时候，不要命名和系统的一样，如socket.py
+    
+  5.2 模块搜索路径
+    1) sys.path                     # 可通过 import sys print sys.path查看, sys.path.append("/tmp") 或 sys.path.insert(0,"/tmp")添加
+    2) 当前工作目录
+    3) PYTHONPATH
+    
+  5.3 包
+    要定义包，首先要有与包同名的目录，在该目录下创建__init__.py文件，
+    ...
+    
+    
+6. 面向对象
+  6.1 创建类
+    class human:
+      name="unknown"                                  # 属性
+      age=0
+      def __init__(self,name,age):                    # 构造函数
+        self.name=name
+        self.age=age
+      def GetName(self)                               # 其他方法
+        return self.name
+      
+    class student(human):                             # 继承于human类
+      def __init__(self,name,age,grade):
+        self.grade = grade
+        human.__init__(self,name,age)                 # 必须显式调用基类构造函数
+      
+    man = human("hujj", 34)
+    print man.name
+    print man.GetName()
+    
+    stu = student("hujj",34,2)
+    print stu.GetName()
+    print stu.grade
+      
+  6.2 需要说明的差异
+    1) 属性没有公有和私有的区别
+    2) 定义方法时必须带上self参数，类似java里的this
+      没有构造方法，初始方法只是在实例化时会执行的方法。 
+      
+  6.3 其他方法
+    特殊方法
+    重载运算符
+    ...
+  
+  
+7. 异常处理
+  7.1 try .. except .. else
+    try:
+      ...
+    except [exception [,data]]:                 # 可以写多个, 异常时可以使用data对象
+      ...
+    else:                                       # 没有异常则执行else
+      ...
+      
+  7.2 try .. finally
+    try
+      ...
+    finally                                     # 无论是否发生异常，都会走到这里。若异常，执行完finally还会继续往上抛
+      ...
+    
+  7.3 触发异常
+    7.3.1 raise [excpetion[,data]]
+    7.3.2 assert test,data
+      -O选项之后，assert不起作用 (if __debug__)
+    7.3.3 内置异常
+      Exception                 # 所有异常的root类
+      StandardError             # 所有内置异常的基类
+      ArithmeticError           # 算术引起的异常
+      AssertionError            # assert引起的异常
+      ...
+    
+
+9. 与操作系统交互
+  很高级的一章，以后再看
+    
+    
+10. 信息处理
+  ...
+    
+    
+11. 文件处理
+  file = open(filename, mode, bufsize)
+  
+  读文件
+    line = file.readlines()         # 读取一行(读取到空行时，文件即结束)
+    lines = file.lines()            # 读取所有行
+    data = file.read()              # 读取所有字符到字符串
+    record = file.read(512)         # 读取512字节
+    
+  写文件
+    file.write(str)
+    file.writelines(lines)
+    print>>file 'hello world'
+    
+  ...
+  
+  
+12. 数据管理和存储
+  
+  
+  
+  
+13. 网络通信
+  
+  
+  
+  
+16. 快速应用开发
+  RAD: Rapid Application Developent
+  RAD的基础:
+    可用的库和扩展: RAD一定是建立在代码重用之上的，包括缓存、数据库等，尽量让开发人员只关心业务。
+    面向对象: OO的确可以很好的实现RAD
+    容错性: RAD不能指望所有的人都不犯错，不鼓励犯错，但要允许犯错。(内存未释放，程序崩溃等，都不影响整体运行)
+    快速部署: 包括快速部署(架构不能因部署而重新编译)和快速恢复(命名服务)，甚至于提供线上debug(开关系统)
+    完善的手册: 包括开发流程手册，库使用手册，辅助工具手册、debug手册、问题日志等
+    简单易学: 快速上手，对开发人员的要求不能太高。
+  
+  RAD要素
+    关于开发速度:
+      开发速度不等于coding速度。
+      开发时间 = 设计时间 + 编码时间 + 测试时间 + 发布时间 + 部署时间 + 维护时间。要谈开发速度，就要谈谈各个方面的总和。
+        设计时间：类之间的继承关系要简单，OOP的思想并非很适合RAD开发。不要为了结构的清晰，而把类的关系弄得很复杂。
+        编码时间: 编码时间 = 编码 + 编译 + 测试运行。
+                  变量管理可以节省编码时间，但这并非RAD的关键
+                  编译是很消耗时间的，一个程序至少会编译几十次，不断的调整和优化。
+                  测试包括测试代码，测试数据准备等。
+        测试时间: 单元测试主要依赖IDE，以及良好的测试环境。集成测试尽可能简单，压力测试并非RAD的任务。
+                  出现的问题更多的应该通过框架去发现。
+        发布时间: 包括各种文档准备，以及程序的提交。
+        部署时间：自动化部署是非常重要的，程序的部署，一定不能影响到框架以及其他程序。
+        维护时间: 良好的监控和预警，可以节省维护开销。数据质量比较难解决，更多的还是要靠开发人员的觉悟以及详细的日志。
+    关于语言的选择:
+      往往会有两种观念，速度至上 和 性能至上，这里说说这两方面的问题
+        速度: 拥有高级编程接口的语言，特别是解释型的语言，编码、编译上确实会快很多。
+              但别忘了，这影响的只是整个开发中的编码阶段。
+        性能: 性能是有规模效应的。快一倍值不值得? 这要看使用规模有多大，不能一概而论。
+              努力半年，将速度提高一倍，使2台PC完成的事情，1台PC就可以完成，值不值得?
+                                        使2000台PC完成的事情，1000台PC就可以完成，值不值得?
+              努力半年，将画面的帧数，由12帧升致24帧，值不值得?
+              更少的服务器，不仅节省了硬件的成本，也极大的减少架构的复杂性，以及维护的开销。
+              不要以为whatsapp是傻子，非要使用学习成本非常高的erlang语言。
+      另外，语言的选择也受限于公司的整体环境，以及市场上开发人员的供求关系。
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    

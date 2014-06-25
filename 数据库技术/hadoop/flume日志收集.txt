@@ -1,0 +1,189 @@
+flume分为flume og(old) 和 flume ng(next)两个版本，以下讨论的都是指新的ng
+用户手册: http://flume.apache.org/FlumeUserGuide.html
+
+0. 介绍
+  一个分布式的海量日志采集、聚合和传输的系统。(收集 -> 简单处理 -> 写入)
+  最大的优点就是灵活，每个模块都可单独配置。
+  真个系统的灾备等方面，做得很简单。目标很明确，就是收集日志
+  
+ 
+1. 下载与安装
+  官网上下载https://flume.apache.org，apache-flume-1.4.0-bin.tar.gz
+  tar -xzvf apache-flume-1.4.0-bin.tar.gz 
+  cd apache-flume-1.4.0-bin
+  
+  1.1 单节点agent
+    新建配置文件conf/single_node.conf，内容见附一
+    bin/flume-ng agent --conf conf --conf-file single_node.conf --name a1 -Dflume.root.logger=INFO,console
+    telnet 10.15.62.8 44444
+    Hello World!
+    观察日志
+  
+
+2. 架构简介
+  没有太多的角色，没有master, slave等概念，没有zookeeper的协调。
+  只有一个agent，因此，是非常简单的结构。
+  agent 主要分为3个模块:
+    source: 从数据源读取数据
+    sink:   将数据写入到某处
+    channel:将source和sink联系起来
+  除此之外，还有一些辅助的模块
+    Channel Selectors
+      source可以选择数据送到那些channel
+    Sink Processors
+      提出了sinkgroups的概念, 将多个sink集成一个group，并在此之上实现failover or load_balance
+    Event Serializers
+      仅用于file_roll sink and the hdfs sink，序列化body数据
+    Flume Interceptors
+      对source中的数据，Interceptors可以插入header或者删除(过滤)数据，非常有用的模块
+  
+
+3. 配置说明
+  3.1 多个彼此独立的流
+    a1.sources = r1 r2                # 中间用空格分开
+    a1.sinks = k1 k2
+    a1.channels = c1 c2
+
+    # flow #1 configuration
+    a1.sources.r1.channels = c1
+    a1.sinks.k1.channel = c1
+
+    # flow #2 configuration
+    a1.sources.r2.channels = c2
+    a1.sinks.k2.channel = c2
+
+  3.2 agent串联
+    串联只需将输出，指定为另一个流的输入即可，格式只能选择avro/thrift 
+
+  3.3 连接HDFS
+    avro
+    
+  3.4 fan out(1对多)
+    有两种模式，replicating and multiplexing。replicating就是每个channel复制一份，multiplexing就是按规则匹配相应的channel
+    # List the sources, sinks and channels for the agent
+    a1.sources = r1
+    a1.sinks = k1 k2
+    a1.channels = c1 c2
+
+    # set list of channels for source (separated by space)
+    a1.sources.r1.channels = c1 c2
+
+    # set channel for sinks
+    a1.sinks.k1.channel = c1
+    a1.sinks.k2.channel = c2
+
+    # 默认是replicating, 可选择multiplexing
+    a1.sources.r1.selector.type = replicating         
+
+    # Mapping for multiplexing selector
+    a1.sources.r1.selector.type = multiplexing
+    a1.sources.r1.selector.header = <someHeader>
+    a1.sources.r1.selector.mapping.<Value1> = <Channel1>
+    a1.sources.r1.selector.mapping.<Value2> = <Channel1> <Channel2>    # 这里要注意，如果写入某一个失败，则全部重发
+    a1.sources.r1.selector.mapping.<Value3> = <Channel2>
+
+    # 所有的规则都没有匹配到
+    a1.sources.r1.selector.default = c2
+  
+  3.5 source配置
+    1) Avro Source 
+    2) Thrift Source 
+    3) Exec Source      
+      可以执行一个简单的shell脚本, 如for i in /path/*.txt; do cat $i; done
+    4) JMS Source
+    5) Spooling Directory Source      
+      监控一个目录中的新文件
+    6) NetCat Source 
+      监听端口，每一行认为是一个event
+    7) Sequence Generator Source 
+      产生从0开始，每次自增1的序列号
+    8) Syslog Source
+      系统日志，若udp，一个包认为是一个event，若tcp，一行认为是一个event
+    9) HTTP Source
+      支持HTTP POST and GET. GET，内容可以是JSON或Blob
+    10) Custom Source
+      自定义的方式，需要自己写个类
+      
+  3.6 Sinks配置
+    1) HDFS Sink
+    2) Logger Sink 
+    3) Avro Sink 
+    4) Thrift Sink 
+    5) IRC Sink 
+      IRC是一种通过网络的即时聊天方式
+    6) File Roll Sink 
+      存放到本地文件系统
+    7) Null Sink 
+      直接抛弃
+    8) HBaseSinks
+    9) MorphlineSolrSink 
+    10)ElasticSearchSink
+    11)Custom Sink
+
+  3.7 Channels配置
+    1) Memory Channel
+    2) JDBC Channel 
+      目前只支持嵌入式的Derby
+    3) File Channel 
+    4) Custom Channel
+    
+  3.8 Channel Selectors配置
+    1) Replicating
+    2) Multiplexing 
+    3) Custom Channel Selector
+    
+  3.9 Sink Processors配置
+    1) Default Sink Processor 
+    2) Failover Sink Processor 
+    3) Load balancing Sink Processor 
+    4) Custom Sink Processor 
+    
+    
+  3.10 Event Serializers配置
+    1) Body Text Serializer 
+    2) Avro Event Serializer 
+    
+  3.11 Flume Interceptors配置
+    在source输入的每条信息中，都插入一些标记
+    1) Timestamp Interceptor
+      插入时间戳
+    2) Host Interceptor
+      插入hostname 或 IP
+    3) Static Interceptor
+      对每条记录插入固定的kv标记
+    4) UUID Interceptor
+    5) Regex Filtering Interceptor
+      对消息体做正则匹配
+    6) regex Extractor Interceptor
+      将正则匹配到的信息，插入到header。如1:2:3.4foobar5 -> one=>1, two=>2, three=>3
+  
+
+
+
+
+
+
+附一: 单节点agent配置文件
+# 主要配置agent的3个组件，source,sink,channels。 并将3个组件连接在一起
+# Name the components on this agent
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+# Describe/configure the source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 44444
+
+# Describe the sink
+a1.sinks.k1.type = logger
+
+# Use a channel which buffers events in memory
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 1000
+a1.channels.c1.transactionCapacity = 100
+
+# Bind the source and sink to the channel
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+

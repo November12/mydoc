@@ -1,0 +1,195 @@
+1. Who use Sharding
+
+
+
+2. Understanding Sharding
+  2.1 a shard will usually be a replica set.
+    一个Shard可能包含1个或多个server。如果是多个server，这些server形成一个replica-set。(每个server都有完整的数据)
+
+  2.2 chunk
+    mongodb是基于chunks的管理，由于负载均衡的原因，chunk会分裂、聚合，并在不同的shard中游走。
+    一个shard可以有1个或多个chunk，chunk中的数据是[a, b)这样一个范围。
+
+  2.3 a shard key
+    chunks内的数据是根据一个key来排序的，这个key叫做shard-key。shard-key可以是一个field，也可以是复合field。
+    一条数据属于某个chunks，仅仅因为它的key落在了这个chunk之间( [a, b) )。
+    一条记录的shard-key不能为空，也不能改变shard-key(不能set操作, 只能remove再insert)
+    记录的shard-key不必指定类型，mongodb里，不同类型的key也可以排序，规则是 null < numbers < strings < objects < arrays < binary data < ObjectIds < booleans < dates < regular expressions
+    chunks的大小是200MB，mongos中通过--chunkSize可以调节(单位:M)，不过要相信mongodb的工程师，这个数值也是他们权衡再三的。(chunk过大，搬运的时候太累。chunk过小，增加了管理chunk的负担)
+
+  2.4 balancer
+    mongodb后台有个balancer专门解决负载平衡的问题。平衡意味着chunks的游走(带来大量的开销)。balancer是否能够做好本职工作，不帮倒忙，还有待测试。(balancer可以被关掉的，难道是mongodb的工程师也没有信心?)
+    为了尽量减少balancer帮倒忙，工程师们设置成负载平衡的阀值为2GB。
+
+  2.5 mongos
+    mongos是user和cluster之间的桥梁，通过mongos，user可以把cluster看作一个single server。
+    查询包含shard-key: mongos查询chunks表，直接将请求送往相应的shard
+    不包含shard-key: mongos只能将请求送往所有的shards
+
+  2.6 The Config Servers
+    mongos需要的chunks表，其实来自config servers。实际上，shards, mongos processes, system administrators等信息都存放在config servers上。
+    config servers是master-master架构，任何改变chunks表的操作(读操作可以)，都必须所有的config server点头才行。(如果有config server宕掉了，必须等它up了，才能执行)
+
+  2.7 mongodb cluster的架构
+    有3部分组成:
+      1. config servers: 元数据的存储、已经cluster的维护。
+      2. mongos: cluster对外的窗口
+      3. shards: 存放数据
+
+
+
+3. Setting Up a Cluster
+  3.1 Choosing a Shard Key
+    选择一个好的shard-key至关重要，shard-key选择不好，后面就玩不转了。(Once you have selected a shard key, you are ready to shard your data.)
+    当然了，选择好的shard-key是没有什么法则的，这个主要拼的是内功。
+
+  3.2 Bad Shard Keys
+    主要是避免形成a hot spot
+    
+    3.2.1 以枚举类型来shard
+    比如7大洲，以洲名为key，进行shard。Asia放在一个shard上，Europe放在另一个shard上，。。。
+    由于chunk一定是一个[a, b)的区间，最终的结果就是，每个shard上，都有一个large, unmovable, unsplittable的chunk
+    可以建一个compound shard key，通过其他字段将其分开。
+
+    3.2.2 以timestamp或者流水号等作为shard key
+    以这种increase的字段作为shard key, 会变成: everything will always be added to the “last” chunk
+    结果就是忙的忙死，闲的闲死。分布式的优势就体现不出来了。
+
+    3.2.3 以Hash等Random的列作为shard key
+    shard key是一个天然的，最好的index, 以Random的列也就意味着放弃了shard key作为index的功能。
+
+  3.3 Quick Start
+    Config Servers
+      一般配置1台(用于测试)，或者3台(生产)。
+      直接运行 mongod即可
+      
+    Mongos
+      mongos --configdb ny-01,sf-01,moon-01
+      3台config svr, 原本彼此没有联系。通过mongos，彼此有了沟通，交流。(The mongos is like the host of the party)
+
+    Shards
+     以下操作都是在mongos/admin下面完成:
+     添加shard:
+      db.runCommand({"addShard" : "sf-02:27017"})         // 添加一个single server作为shards
+      db.runCommand({"addShard" : "rs/rs1-a,rs1-c"})      // 添加一个replica set作为shards(要给每台机器起名字)
+
+      db.runCommand({"addShard" : "rs/rs1-a,rs1-c", "name" : "dzh", "maxSize" : 20000})       // 完整的shard语法
+      name: 自定义的shards name
+      maxsize: shards存储数据的最大size，单位MB (今后可能会自动判断maxsize)
+      
+     设置: 
+      db.adminCommand({"enableSharding" : "blog"})            // enable database
+      db.adminCommand({"shardCollection" : "blog.posts", key : {"date" : {$gte: 20000101000000, $, "author" : 1}}      // set collection and shard key
+      db.adminCommand({"shardCollection" : "student.info", key : {"name" : 1}})
+
+      对于一个已经存在数据的collection做sharding，必须保证每个document都有shard key(不能null)，并且shard key上面有index
+      
+  3.4 Adding and Removing Capacity
+    3.4.1 Add shard
+      操作和3.3中介绍的addShard一样
+      增加shard意味的大量chunks的游走，这个过程mongodb会依次的，很温柔的进行。(尽管如此，还是尽可能的在低负载的时候做这个)
+      
+    3.4.2 Remove shard
+      db.runCommand({removeShard : "Golden Gate shard"})
+      remove shard意味着这个shard上面所有的chunks都要拷贝到别的shard上。所以，这会是一个比较漫长的过程。
+      执行removeshard之后，会立即返回。此后多次执行会得到不同的结果:
+      "state" : "started"     : 第一次执行removeshard
+      "state" : "ongoing"     : 正在拷贝中
+      "state" : "completed"   : 已经拷贝完毕
+      
+    3.4.3 Changing Servers in a Shard
+      这个是replica set内部的操作，并不需要通过mongos
+      
+
+
+4. Working With a Cluster
+  4.1 Querying
+    cluster查询数据和single server查询大致一样。如果希望从slave上面查询，必须先设置"slave okay"。(possibly out-of-date data)
+
+  4.2 和single server上查询的差异
+    4.2.1 count()
+      这个要先说说迁移的过程，举个例子, chunk X要从shard A迁移到shard B
+        step 1: X在A里面
+        step 2: X在迁移到B的途中，这时候，可能X中的数据可能会有两份
+        step 3: 迁移结束, X有两份，分别在A, B中
+        step 4: 等待config server注册以后，A中的X被删除
+      这个过程中，step 2, 3会存在2份X，因为count() = A.count() + B.count()，因此，最终结果可能大于实际的结果。(今后可能会解决这个问题)
+
+    4.2.2 Unique Indexes (must prefix by the shard key)
+      来看看unique index不是shard key的情况。举个例子，我们给username建了unique index，但是shard key是email, 这个时候插入一条记录{username: "hujj", email: "hujj@gw.com.cn"}
+        step 1: mongos去所有shard查询, 是否有username: hujj; 答案是否定的。
+        step 2: 既然没有冲突，那么插入shard, 比如shard 3
+        step 3: 在还没有插入成功的时候，又来了一条记录请求插入{username: "hujj", email: "hujj@hotmail.com"}
+        step 4: mongos去所有shard查询，由于前一条还没有插入成功，所以依然没有冲突，因此，插入shard 1
+      最后，在step2, step4时，同样的username插入了两条记录，违背了unique原则。
+      如果unique index是shard key，那么永远只会落在一个chunks中，不会出现上述情况，而且效率要更高(不需要询问所有shard)
+      
+    4.2.3 Updating
+      依然是上面的原因，如果不是update一个shard key，最终可能会失败。(即时不失败，效率也得不到保证)
+      
+  4.3 MapReduce
+    Each shard performs its own map and reduce
+    Mongos chooses a “leader” shard, for a final reduce
+    MapReduce not real-time calculations.
+    MonogDB created temporary collections for output. (have to manually clean up)
+
+
+  
+5. Administration
+    db.printShardingStatus()
+    
+    config Collections
+    config.mongos
+    config.shards
+    config.databases
+    config.collections
+    config.chunks
+    changelog
+    chunks
+    collections
+    databases
+    lockpings
+    locks
+    mongos
+    settings
+    shards
+    system.indexes
+    version
+  
+6. Config Server
+  http://www.mongodb.org/display/DOCS/Changing+Config+Servers
+  Config Server是很重要的部分，正因为重要，所以任何一台configsvr的宕机都会导致所有写入configsvr的失败。也就是说，所有configsvr的数据都必须是严格一致的。
+  由于设计上的原因，目前只能配置成1台或者3台。(可以想一想，为什么不做成replica set?)
+  
+  6.1 Upgrading from one config server to three
+    很简单，停机 -> copy config data -> 启动, 
+
+  6.2 flushRouterConfig
+    mongos会cache configsvr的数据，有时候会导致不同步，这种情况可以flush一下mongos的cache
+    db.adminCommand("flushRouterConfig")
+
+ 
+  
+7. Chunks
+  7.1 Moving Chunks 
+    移动chunks到其它sharding (chunk的移动会导致网络，i/o等的开销)
+    
+    db.adminCommand({moveChunk : "test.foo", find : {x : 5}, to : "baz"})
+      moveChunk: full collection namespace
+      find: 包含此条件的chunks
+      
+  7.2 Splitting Chunks
+    无需移动Chunks, 因此开销很小
+    db.runCommand( { split : "student.info" , find : { name : "hujj" } } )
+    
+  7.3 Pre-Splitting Chunks
+    db.runCommand( { split : "student.info" , middle : { name : "hujj" } } )        // 也可以分配一个范围
+
+ 
+
+
+  
+db.runCommand({ listShards : 1});
+
+db.printShardingStatus({verbose:1});
+

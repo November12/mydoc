@@ -1,0 +1,11 @@
+set hlsearch
+set bs=2
+syntax on
+set ruler
+set tags=tags;
+set tags+=~/.vim/systags
+set tags+=/usr/include/c++/3.4.3/tags;
+set nu
+map <F3> :Tlist<cr>
+map <F4> <C-w>w
+au BufReadPost * if line("'\"") > 0|if line("'\"") <= line("$")|exe("norm '\"")|else|exe "norm $"|endif|endif

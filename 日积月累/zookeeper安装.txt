@@ -1,0 +1,42 @@
+0. 角色:
+    Leader: zookeeper服务器中的Leader，只有一台
+    Follower: 其它的zookeeper服务器
+    客户端: 连接zookeerer的机器，他们连接其中的一台，并不关心是Leader还是Follower
+
+1. 安装
+  下载 http://zookeeper.apache.org/releases.html 的 zookeeper-3.3.5.tar.gz
+  tar -xzvf zookeeper-3.3.5.tar.gz
+  mv zookeeper-3.3.5 /usr/local/
+  cd /usr/local/zookeeper-3.3.5/
+  mkdir data
+  
+2. 配置zoo.cfg
+  vi conf/zoo.cfg
+    dataDir=/usr/local/zookeeper-3.3.5/data/    # 数据目录，上面已经创建过的
+    clientPort=2181                             # 客户端连接的端口号
+    initLimit=10                                # Leader忍受Follower初始化连接时心跳包的个数，即10*2000毫秒，超过此值则认为Follower失效
+    syncLimit=5                                 # Leader和Follower交互忍受的时间间隔，也就是发送到应答的间隔，超过此值则认为Follower失效
+    tickTime=2000                               # zookeeper服务器间，或服务器-客户端间维持心跳包的间隔时间
+    
+    # server.A=B:C:D
+    # A: 第几号服务器
+    # B: IP
+    # C: 和Leader服务器交互的端口
+    # D: 选举新的Leader时用到的端口
+    server.1=192.168.3.131:2888:3888
+    server.2=192.168.3.132:2888:3888
+    server.3=192.168.3.133:2888:3888
+
+3. 配置myid
+  在data目录下创建一个文件myid, 仅仅把A的值写进去即可。(也就是说，每台机器上的值是不一样的)
+  以此来表明自己的身份。
+  
+4. 启动
+  cd zookeeper/bin
+  sh zkServer.sh start
+  
+5. 验证
+  5.1 sh zkServer.sh status
+  5.2 nc 10.15.82.174 2181
+      ruok
+      返回imok

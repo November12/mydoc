@@ -1,0 +1,438 @@
+《Lua 5.1 参考手册》，《Lua中文教程》 
+http://www.lua.org/manual/5.2/
+
+
+1. Lua介绍
+  Lua本身以简单优雅为本，着眼于C不擅长的任务，并借助C/C++为其扩展。
+  Lua是一个小巧而简单的语言，作为C语言的补充，完成C不擅长的工作。(如高级语言，动态结构，易测试调试等)
+  因此，Lua非常易于和C程序整合、扩展。
+  关于简单和优雅，等了解了Lua，自然知晓。
+
+  使用范围:
+    1) 将Lua嵌入到其它应用当中
+       因为小，所以可以很轻松的嵌入到其它应用当中，这也是我来了解Lua的原因。
+    2) 独立使用Lua
+       很少人会独立使用Lua吧，至少我不会。我更愿意用Python
+    3) 将Lua和C/C++混合使用
+       
+       和1有点像，组件还是用C开发的，使用Lua建立简单灵活，易于使用的接口。
+
+  说了这么多，总结就一个字: 小
+
+
+2. Lua使用场景
+  Lua还是个性非常鲜明的脚本语言，有一下几个优势。(按重要性排序)
+    1) 小: 这使得嵌入到其他应用当中非常容易，几乎可以忽略其大小
+    2) 易: 非常简单的语法，简单易学，而且不容易出错。可以招一群菜鸟民工来编程。
+    3) C:  和C配合非常好。
+    4) 快: 最快的脚本语言(无论是JIT还是非JIT)
+    
+  为什么不直接使用C++，而要引入Lua
+    1) 用好C++本身，就是一个很高的要求。(公司需要招收那么多C++专家么)
+    2) C++程序结构复杂，通过混搭，将框架与业务实现相分离。(战斗机群里也有高低搭配的，对吧)
+    3) 
+    
+  Lua vs python
+    python是最全面，最完整的脚本语言。通过两者的比较，进一步探讨Lua的使用范围。
+    1) 定位不同, python定位于独立开发，lua定位于嵌入，特别是C++
+    2) 丰富的库, python拥有非常多的库可供使用，而Lua(或C++)没有，大多数时候必须从造轮子开始。
+    
+  结论
+    上面的论述似乎已经足够多了吧，结论也是非常简洁明了的。
+    Lua可以嵌入到其它应用当中，特别是C++程序当中。
+
+
+2. Lua解释器
+  脚本前加上 #!/usr/local/bin/lua, 直接运行即可。
+  或者 lua test.lua
+  
+  参数用法:
+    lua -la -lb             # 类似include，先运行a, 再运行b
+    lua -i -la              # 执行完a以后，进入交互模式
+    lua -e "print(hello)"   # 直接将命令传递给Lua
+    
+  命令行参数:
+    全局变量arg存放Lua的命令行参数
+    lua -e "print(hello)" script a b
+    arg -3   -  lua
+    arg 0    -  script
+    arg 2    -  b
+    
+    
+3. 数据结构
+  3.1 基本数据类型
+    Lua是弱类型，事先不需要定义
+    共有8种基本数据类型，函数type()可以测试其类型
+    1) nil
+      全局变量未赋值前，默认值为nil。变量 - nil 可以删除变量。
+      换句话说，所有未被声明的变量，都是nil。
+    2) boolean
+      只可取false/true，在条件句中，除了false和nil为假，其余都为真，包括0和空串
+    3) numbers
+      只有实数，没有整数。
+    4) strings
+      string是不可以修改的，建立的时候，其内存就分配完毕。
+    5) function
+      函数也是基本类型，也可以保存在变量中的哦
+    6) userdata
+    7) thread
+    8) table
+      table是Lua中唯一的数据结构, array, list .. 都是通过table实现的
+      使用之前需要先创建一个table, 如 s = {}, 或 s = {1,2,3}
+      
+  3.2 数组
+    Lua中习惯上数组的下表从1开始，所以如果声明
+      squares = {1, 4, 9, 16, 25, 36, 49, 64, 81}
+      squares[1] = 1
+    多维数组可以这样声明: s = {}; s[2] = {}; s[2][5] = 20; print(s[2][5])   -- s是一个table, s[2]也是一个table
+    需要说明的是，如果在C语言中，i[1000000]会开辟一个很大的栈空间。而在lua，不占用任何空间。
+    
+  3.3 链表
+    每一个节点是一个table，和C链接的指针方向是反的，很不习惯，还是尽量用数组吧。
+    for i = 1, 10, 2 do
+      list={ value = i ,next = list }
+    end
+    
+  3.4 队列
+    用数组实现。
+    由于大头入，小头出，这样会导致下标不断增大。不过没关系，lua下标是number类型，双精度表示，绝不可能溢出。
+    
+  3.5 集合
+    将所有集合中的元素作为下标存放在一个table里，既可以做集合遍历，又可以做map使用
+    reserved = {["while"] = true, ["end"] = true, ["function"] = true, ["local"] = true}
+  
+  3.6 字符串缓冲
+    通过 buff = buff .. line 的语句，可以将字符串连接起来，但其效率极低。就算是不以性能为主的lua，对于可以提高1万倍的方法，不能被忽视。
+    上面的语句，如果buff 50kB, line一个字节，那么为了连接1个字节，也不得不拷贝50kB的内容。了解了问题，相信你一定能找到解决的方法。
+    
+    
+4. Lua语句
+  4.1 chunk
+    Lua 的一个执行单元被称作 chunk。chunk的语法是 chunk ::= {stat [`;′]}  
+    lua 把一个 chunk 当作一个拥有不定参数的匿名函数处理。正是这样，chunk内可以定义局部变量，接收参数，并且返回值。 
+  4.1 block
+    一个控制结构内，一个函数体，或者一个chunk
+    代码块内可以使用局部变量，必须用local创建，通常写成do block end形式
+  4.2 赋值语句
+    Lua 允许多重赋值
+      stat ::= varlist1 ′=′ explist1
+      varlist1 ::= var {′,′ var}
+      explist1 ::= exp {′,′ exp}
+  4.2 if语句
+    if ... then
+      ...
+    elseif ... then 
+      ...
+    else
+      ...
+    end;
+  4.3 while语句
+    while ... do
+      ...
+    end
+  4.4 repeat-until语句
+    repeat
+      ...
+    until ...;
+  4.5 for语句
+    -- 注意: 3个表达式在循环之间计算一次(仅一次)
+    for var=exp1,exp2,exp3 do               -- 从exp1开始，到exp2结束，步长为exp3
+      ...
+    end
+    -- for的泛型形式, 详见"迭代器"
+
+  4.6 break和return语句
+    注意，只能用在一个block的末尾
+      
+
+4. Lua语法
+  3.2 表达式
+    连接运算符 ..             连接两个字符串(或数字,但会转化为字符串)
+    
+
+    
+  3.4 函数
+    function fun (arg ..)
+      ...
+    end;
+    
+    函数可以有多个返回值
+      x,y = foo2()        -- x = 'a', y = 'b'
+    
+    可变参数
+      和c的语法相似，隐藏了arg和n
+      function g (a, b, ...) end              -- g(3, 4, 5, 8) a=3, b=4, arg={5, 8; n=2}
+      
+    命名参数
+      很贴心的语法方式，是吧!
+      rename{old="temp.txt", new="temp1.txt"}
+      function rename (arg)
+        return os.rename(arg.old, arg.new)
+      end
+      
+    函数是变量
+      意味着函数可以保存到变量中，也可以作为其它函数的参数，也可以作为其它函数的返回值
+
+    局部函数
+      让函数拥有和变量相同的作用域
+      local fact
+      fact = function(n)
+        ...
+      end
+      
+    尾调用
+      当函数最后一个动作是调用另外一个函数时，我们称这种调用尾调用。
+      function f(x)
+        return g(x)       -- g(x)的调用就是尾调用, 必须是return function()
+      end
+      下面这些都不是尾调用
+        g(x)
+        return
+       或
+        return g(x) + 1
+        return (g(x))
+      Lua处理这种尾调用的时候，不使用额外的栈空间。因此对于递归的层次数量，没有要求。(不会导致栈溢出)
+      因此，Lua处理尾调用，更像是goto
+
+
+5. 迭代器
+  5.1 词法定界
+    内部的函数体可以访问外部的函数的局部变量，这种特征我们称作词法定界。
+
+  5.2 闭包
+      假设函数f2定义在函数f1中，那么就称f2为f1的内嵌(inner)函数，f1为f2的外包(enclosing)函数，
+      f2的内嵌必然是f1的内嵌，而f1的外包也一定是f2的外包。(传递性)
+      内嵌函数能访问外包函数已创建的所有局部变量，这些局部变量则称为该内嵌函数的外部局部变量(或称upvalue)
+      函数是编译期概念，是静态的，而闭包是运行期概念，是动态的。闭包不仅有函数的内容，还有函数的环境。
+      
+  5.3 泛型for
+    5.3.1 定义
+      stat ::= for namelist in explist
+      namelist ::= Name {′,′ Name}
+      explist1 ::= exp {′,′ exp}
+    5.3.2 执行过程
+      1) explist只会被计算一次。它返回三个值: 迭代函数，状态常量和控制变量
+      2) 将状态常量和控制变量作为参数调用迭代函数
+      3) 将迭代函数返回的值赋给变量列表
+      4) 如果返回的第一个值为nil循环结束，否则执行循环体
+      5) 回到第二步再次调用迭代函数
+      
+
+6. 协同程序
+  协同程序与多线程下的线程非常相似，不同在于，同一时刻只会有一个协同程序在运行。
+  协同有四种状态：suspended（挂起）、running（运行）、dead（死亡）、normal（正常），
+  协同是非抢占式的, 而且是非对称的，只能通过显示的调用yield()挂起。在外部(而非自己)resume()唤醒
+  协同程序API相关用法，详见 附四: 协同 API
+    
+ 
+6. 编译·运行·调试
+  6.1 调用C函数
+    C函数必须遵循Lua要求的形式，即typedef int (*lua_CFunction)(lua_State* L)。这里有几点需要注意:
+      1) lua是通过操控函数指针，从而操作C函数的
+      2) 参数列表也是通过指针形式传递的
+      3) 返回值只能是int类型，不能传递期望的返回值
+    举例说明见附二: 调用C函数
+  
+  6.2 异常和错误处理
+    通常应用要求Lua运行一段chunk，如果发生异常，应用根据Lua返回的错误代码进行处理。
+    print(debug.traceback())
+    
+    
+7. 全局变量
+  Lua用一个名为environment普通的表来保存所有的全局变量。并简称为_G。
+  下面语句遍历所有的全局变量
+    for k, v in pairs(_G) do print(k, v) end
+  声明全局变量
+    很简单, 直接 var = value 即可。 (删除则var = nil)
+  
+8. 命名空间
+  几乎每种语言，都有自己的解决命名空间的方法，如java的package，C++的namespace。
+  但Lua没有明确的提出这样的机制。不过通过table，也可以很容易的实现这一点。
+  
+  方法一: 
+    complex = {}
+    function complex.new (r, i) ...
+    每一个函数定义都必须显示的在前面加上包的名称
+    同一包内的函数相互调用必须在被调用函数前指定包名
+    
+  方法二:
+    local function new (r, i)
+    complex = {
+      new = new,
+      add = add,
+    }
+    这样，包内函数间的调用，可以不用指定包名了
+    
+    
+9. 面向对象
+  function Account.withdraw (self, v)
+  function Account:withdraw (v)
+  Account.withdraw (Account, 100.00)
+  Account:withdraw (100.00)
+    
+    
+10. 标准库
+  10.1 table库
+    详见附三
+  10.2 IO库
+    
+    
+    
+    
+  
+  
+附一: lua安装
+  1. 官网下载lua最新版本, http://www.lua.org/, lua-5.2.3.tar.gz (才200k)
+     tar zxf lua-5.2.3.tar.gz
+     cd lua-5.2.3
+     make linux                 (make linux不成功，可能需要在src/Makefile中, linux下，-lreadline后面，加上-lncurses)
+     make install
+     
+     
+附二: 调用C函数
+  step1: 编辑C文件, calc.cpp
+    extern "C" {
+      #include <lua.h>
+      #include <lauxlib.h>
+      #include <lualib.h>
+    }
+
+    extern "C" int add(lua_State* L)                      // 该函数必须以C的形式被导出，因此extern "C"是必须的
+    {
+        double op1 = luaL_checknumber(L,1);               // 获取参数
+        double op2 = luaL_checknumber(L,2);
+        lua_pushnumber(L, op1 + op2);                     // 结果压栈
+        return 1;
+    }
+
+    static luaL_Reg mylibs[] = { 
+        {"add", add},                                    // 函数名称 和 C函数指针
+        {NULL, NULL}                                     // 最后一个元素的两个字段均为NULL
+    }; 
+
+    extern "C" int luaopen_libcalc(lua_State* L)         // 必须为luaopen_xxx，xxx表示library名称，与require "xxx"对应
+    {
+        luaL_newlib(L, mylibs);
+        return 1;
+    }
+  
+  step2: 编译成.so
+    gcc -c calc.cpp -fPIC
+    g++ -shared calc.o -o libcalc.so
+  
+  step3: 编辑lua脚本
+    local lfs = require "libcalc"       
+    print(lfs.add(1.2,2.0))
+  
+  step4: 运行
+    lua test.lua
+
+
+附三: table API
+  tb1 = {"alpha", "beta", "gamma"}
+  #tb1                       -- 获取s1长度
+  table.concat               -- 连接各元素, 如table.concat(tb1, ":", 1, 3)    alpha:beta:gamma
+  table.insert               -- 在某个位置插入一个元素, 如table.insert(tb1, 1, "d")   d,alpha,beta,gamma 
+  table.pack                 -- 组成一个table, 如tb2 = table.pack ("alpha", "beta", "gamma")  
+  table.remove               -- 删除某个位置的元素, 如table.remove(tb1, 1)
+  table.sort                 -- 排序
+  table.unpack               -- pack的逆操作
+
+
+附四: 协同 API
+  coroutine.create           -- 需要一个函数作为参数，作为协同的程序。create之后，状态为挂起。
+  coroutine.yield            -- 挂起，可以有参数列表，将按原值返回给resume。
+  coroutine.resume           -- 唤醒，参数列表，将传递给协同程序。
+  coroutine.status           -- 当前协同状态
+  coroutine.running 
+  coroutine.wrap
+  
+  举例:
+    co2 = coroutine.create(function(a, b)  
+            coroutine.yield(a * b, a + b)  
+        end)  
+    print(coroutine.resume(co2, 2, 3))            -- true    6       5
+
+
+附五: package库
+
+
+
+
+附六: Debug API
+  自省 introspective
+  
+
+
+
+
+
+os.clock
+os.date
+os.difftime
+os.execute
+os.exit
+os.getenv
+os.remove
+os.rename
+os.setlocale
+os.time
+os.tmpname
+
+
+package.config
+package.cpath
+package.loaded
+package.loadlib
+package.path
+package.preload
+package.searchers
+package.searchpath
+
+debug.debug
+debug.getuservalue
+debug.gethook
+debug.getinfo
+debug.getlocal
+debug.getmetatable
+debug.getregistry
+debug.getupvalue
+debug.setuservalue
+debug.sethook
+debug.setlocal
+debug.setmetatable
+debug.setupvalue
+debug.traceback
+debug.upvalueid
+debug.upvaluejoin
+
+
+
+assert
+collectgarbage
+dofile
+error
+getmetatable
+ipairs
+load
+loadfile
+next
+pairs
+pcall
+print
+rawequal
+rawget
+rawlen
+rawset
+require
+select
+setmetatable
+tonumber
+tostring
+type
+xpcall
+
+  
+  
+  
+  

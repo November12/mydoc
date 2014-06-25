@@ -1,0 +1,9 @@
+ICMP - Internet Control Message Protocol, Internet控制报文协议
+
+用于在IP主机、路由器之间传递控制消息。属于网络层的协议。
+控制消息是指网络通不通、主机是否可达、路由是否可用等网络本身的消息。
+
+ping命令
+  著名的ping就是发送ICMP包，并等待返回。将返回的内容打印到屏幕上。
+
+
