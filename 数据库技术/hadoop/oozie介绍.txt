@@ -1,11 +1,18 @@
-1. 简介
-  Oozie是一种Java Web应用程序，它运行在Java servlet容器(即Tomcat)中，并使用数据库来做自身的存储。
+  官网: http://oozie.apache.org/
+  关键字: 数据流、DAG、
   
-  需要用Oozie给map-reduce写一个配置文件
+
+1. 简介
+  Oozie是一种Java Web应用程序，它运行在Java servlet容器(如Tomcat)中，并使用数据库来做自身的存储。
+  Oozie通过xml来定义工作流。
   
   Oozie可以做到:
     1. 工作流定义
     2. 实例的状态
+    
+  触发机制:
+    1. 定时
+    2. 数据(data availabilty)
 
     
 2. 工作流
@@ -13,11 +20,50 @@
   
   可以定义以下工作(action):
     Hadoop map-reduce
-    Hadoop文件系统
     Pig
+    Hive
+    Sqoop
+    Distcp
     Java
+    Shell script
     Oozie的子工作流
     
+  术语:
+    Action: 也叫task、action node, 代表一个需要执行的task
+    Workflow: 一系列Action的集合，集合会组成一个DAG
+    Workflow Definition: 用程序描述的工作流，可被执行。
+    Workflow Definition Language: 用于Workflow Definition的语法
+    Workflow Job: Workflow Definition的一个实例
+    Workflow Engine: 执行workflows jobs的环境
+    
+  DAG:
+    1. Control Flow Nodes
+      1) Start node
+        workflow job的入口，每个workflow必须有且仅有一个Start node
+      2) End node
+        标志着job的成功结束，一个workflow必须有且仅有一个End node
+      3) Kill node
+        the actions will be killed. 一个workflow可以有零个到多个Kill node
+      4) Decision node
+        类似switch .. case .. 逻辑
+      5) Fork and Join node
+        分裂和聚合path
+    2. Workflow Action Nodes
+      1) Map-Reduce Action
+      2) Pig Action
+      3) Fs/HDFS action
+        delete/mkdir/move/chmod等对FS的操作
+      4) Ssh Action
+      5) Sub-workflow Action
+      6) Java Action
+      7) Email Action
+      8) Shell Action
+      9) Hive Action
+      10)Sqoop Action
+      11)DistCp Action
+      12)Writing a Custom Action Executor
+
+
   工作完成以后，会触发一个唯一的URL，通知此事。(所以，main函数是Oozie写的)
   
 

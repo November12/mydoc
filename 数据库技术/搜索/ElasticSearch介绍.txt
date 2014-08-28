@@ -1,0 +1,138 @@
+负载均衡、重分配、合并结果集
+
+http://10.15.144.56:9200/_cluster/health
+http://10.15.144.56:9200/_cluster/nodes
+http://10.15.144.56:9200/_plugin/head/
+
+
+Indices
+
+
+
+角色关系对照
+
+MySQL                       ES
+database                  index(复数 indices)
+table                     type
+row                       document
+field                     field
+
+
+master
+  ES集群是对等的，所以master的概念很弱化。
+
+shards
+  分片可以把一个大的索引拆分成多个，分布到不同的节点上。并构成分布式计算。
+
+replicas
+  代表索引副本，es可以设置多个索引的副本，es会自动对搜索请求进行负载均衡。
+  可靠性，可用性，性能都能得到保证。
+
+recovery
+  代表数据恢复或叫数据重新分布，es在有节点加入或退出时会根据机器的负载对索引分片进行重新分配，
+  挂掉的节点重新启动时也会进行数据恢复。
+
+river
+  代表es的一个数据源，也是其它存储方式（如：数据库）同步数据到es的一个方法。
+  它是以插件方式存在的一个es服务，通过读取river中的数据并把它索引到es中，
+  官方的river有couchDB的，RabbitMQ的，Twitter的，Wikipedia的，river这个功能将会在后面的文件中重点说到。
+
+gateway
+  es索引的持久化存储方式，es默认是先把索引存放到内存中，当内存满了时再持久化到硬盘。
+  es支持多种类型的gateway，有本地文件系统（默认），分布式文件系统，Hadoop的HDFS和amazon的s3云存储服务。
+  当这个es集群关闭再重新启动时就会从gateway中读取索引数据。
+
+discovery.zen
+  代表es的自动发现节点机制，es是一个基于p2p的系统，它先通过广播寻找存在的节点，
+  再通过多播协议来进行节点之间的通信，同时也支持点对点的交互。
+
+Transport
+  代表es内部节点或集群与客户端的交互方式，默认内部是使用tcp协议进行交互，
+  同时它支持http协议(json格式)、thrift、servlet、memcached、zeroMQ等的传输协议（通过插件方式集成）。
+  
+Filter
+  比如全部转换为小写。分析过程中(无论是建索引，还是查询)，通过Filter，都可以得到更纯净的查询条件。
+  
+Analyzer
+  多个Filter按照一定的顺序，组成了Analyzer
+  
+Mapping
+  mapping的作用就是执行一系列的Analyzer将输入的数据转成可搜索的索引项
+
+
+  
+  
+  
+基本操作
+  创建索引: client.prepareIndex(index, type);        // 
+  
+  
+  
+  
+  
+  
+  
+  
+配置: config/elasticsearch.yml
+################################### Cluster ###################################
+cluster.name: elasticsearch-dzh-0819            # 集群名称
+threadpool.search.queue_size: -1
+
+#################################### Node #####################################
+node.name: "Franz Kafka"                        # 节点名称
+node.master: true                               # 能否成为master
+node.data: true                                 # 能否保存数据
+node.max_local_storage_nodes: 1                 # 一份代码只能启动一个节点
+
+#################################### Index ####################################
+# index.number_of_shards: 5                       # 每个索引的分片数(可提高index性能，创建后不能改动)
+# index.number_of_replicas: 1                     # 复制份数(可提高search性能以及HA，创建后可以改动)
+
+#################################### Paths ####################################
+# path.conf: /path/to/conf                        # 配置文件目录: elasticsearch.yml 和 logging.yml
+# path.data: /path/to/data                        # data目录(可配置多个，/path/to/data1,/path/to/data2)
+# path.work: /path/to/work                        # 临时文件目录
+# path.logs: /path/to/logs                        # 日志目录
+# path.plugins: /path/to/plugins                  # 插件目录
+
+################################### Memory ####################################
+# bootstrap.mlockall: true
+# ES_MIN_MEM 和 ES_MAX_MEM 设置为一样的值，并设置 ulimit -l unlimited
+
+############################## Network And HTTP ###############################
+# network.bind_host: 192.168.0.1                  # 绑定IP(client使用)
+# network.publish_host: 192.168.0.1               # 绑定IP(other nodes使用)
+# network.host: 192.168.0.1                       # both 'bind_host' and 'publish_host'
+# transport.tcp.port: 9300                        # node to node通讯端口
+# transport.tcp.compress: true                    # 压缩node to node数据
+
+# http.port: 9200                                 # HTTP访问端口
+# http.max_content_length: 100mb                  # HTTP最大数据长度
+# http.enabled: false                             # 是否启用HTTP
+
+################################### Gateway ###################################
+# gateway.type: local
+# gateway.recover_after_nodes: 1
+# gateway.recover_after_time: 5m
+# gateway.expected_nodes: 2
+
+############################# Recovery Throttling #############################
+# cluster.routing.allocation.node_initial_primaries_recoveries: 4
+# cluster.routing.allocation.node_concurrent_recoveries: 2
+# indices.recovery.max_size_per_sec: 0
+# indices.recovery.concurrent_streams: 5
+
+################################## Discovery ##################################
+# discovery.zen.minimum_master_nodes: 1                 # 最少发现N的可能成为master的节点
+# discovery.zen.ping.timeout: 3s                        # ping其它节点的超时时间
+
+# multicast discovery
+# ...
+
+# Unicast discovery
+# discovery.zen.ping.multicast.enabled: false
+# discovery.zen.ping.unicast.hosts: ["host1", "host2:port", "host3[portX-portY]"]
+
+# EC2 discovery
+# ... 
+

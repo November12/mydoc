@@ -1,6 +1,14 @@
 最最完整的语法规则，可以查阅这里。http://wiki.apache.org/hadoop/Hive/LanguageManual
 
 1. 语法规则
+  hive也有database的概念，是一个逻辑概念，仅解决命名冲突问题。
+  CREATE DATABASE financials;
+  SHOW DATABASES;
+  USE DATABASE;
+  USE default;
+
+  hive对大小写不敏感
+
   一次命令(可批量)以分号作为结束
   不区分大小写
   
@@ -8,34 +16,7 @@
     hive -f script.q
     hive -e 'select * from dummy'
     
-
-2. DDL 操作
-  1) 创建表
-    create table optional_user_day (user string, datetime bigint)
-    row format delimited fields terminated by ','
-    lines terminated by '\n' stored as textfile;
-
-
-3. DML 操作
-  1) 查询
-    show tables;
-    show functions;             # 显示内置函数
-  2) 加载数据:
-    # 加上overwrite，会将数据库目录清空。不加则为添加
-    LOAD DATA LOCAL INPATH 'input/ncdc/micro-tab/sample.txt' overwrite into table records;
-  3) SELECT
-    select year, MAX(temperature) from records where temperature = 30 group by year;
-    select的结果，可以放在多个位置:
-    1. 放到另一个table中
-      insert overwrite table test select uid,name from test2;
-    2. 放到本地文件系统
-      INSERT OVERWRITE LOCAL DIRECTORY '/tmp/reg_3' SELECT a.* FROM events a;
-    3. 放到hdfs文件系统
-      INSERT OVERWRITE DIRECTORY '/tmp/hdfs_out' SELECT a.* FROM invites a WHERE a.ds='<DATE>';
-      
-
-    
-2. 数据类型
+4. 数据类型
   基本数据类型:
     tinyint     1字节有符号
     smallint    2字节有符号
@@ -51,18 +32,82 @@
     struct      一组命名字段
     
     
+2. 元数据查看
+  show tables;
+  show functions;             # 显示内置函数  
+    
+
+2. DDL 操作
+  1) 创建表
+    create table optional_user_day (user string, datetime bigint)
+    row format delimited fields terminated by ','
+    lines terminated by '\n' stored as textfile;
+    
+3. DQL 操作
+  [WITH CommonTableExpression (, CommonTableExpression)*]
+  SELECT [ALL | DISTINCT] select_expr, select_expr, ...
+  FROM table_reference
+  [WHERE where_condition]
+  [GROUP BY col_list [HAVING condition]]
+  [   CLUSTER BY col_list
+    | [DISTRIBUTE BY col_list] [SORT BY| ORDER BY col_list]
+  ]
+  [LIMIT number]
+  
+  WHERE：    详见 https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+  DISTINCT： 不是加载到某一列，而是加载到所有列。
+  FROM：     可以是一个表，也可以是一个子查询。
+  COLUMN     表达方式可以使用正则, 如 SELECT `(ds|hr)?+.+` FROM sales
+  SORT BY：  只保证单个reduce输出有序
+  ORDER BY： 全排，只有一个reduce任务
+  DISTRIBUTE BY:    指定的数据内容分到同一个reducer
+  CLUSTER BY:       Cluster By is a short-cut for both Distribute By and Sort By.
+  JOIN:      join的条件只能是等号。(机制决定，很难改变)
+             join只支持 [left, right, full] outer join 和 left semi join
+  UNION ALL: 支持多表Union操作
+  TABLESAMPLE:     支持取样语法，前提是已经分桶
+  VIRTUAL COLUMNS: 目前只有两个, INPUT__FILE__NAME 和 BLOCK__OFFSET__INSIDE__FILE
+  LATERAL VIEW：   将Array类型的列展开后统计
+  CTE：
 
 
+3. DML 操作
+  hive不支持INSERT INTO, UPDATE, DELETE操作
+  2) 加载数据:
+    # 加上overwrite，会将数据库目录清空。不加则为添加
+    LOAD DATA LOCAL INPATH 'input/ncdc/micro-tab/sample.txt' overwrite into table records;
+  3) SELECT
+    select year, MAX(temperature) from records where temperature = 30 group by year;
+    select的结果，可以放在多个位置:
+    1. 放到另一个table中
+      INSERT OVERWRITE TABLE test SELECT uid,name from test2;
+    2. 放到本地文件系统
+      INSERT OVERWRITE LOCAL DIRECTORY '/tmp/reg_3' SELECT a.* FROM events a;
+    3. 放到hdfs文件系统
+      INSERT OVERWRITE DIRECTORY '/tmp/hdfs_out' SELECT a.* FROM invites a WHERE a.ds='<DATE>';
+  4) Load/Insert
+    1. Load 操作只是单纯的复制/移动操作，将数据文件移动到 Hive 表对应的位置。
+      LOAD DATA [LOCAL] INPATH 'filepath' [OVERWRITE] INTO TABLE tablename [PARTITION (partcol1=val1, partcol2=val2 ...)]
+    2. 和Select配合，将Select结果导入table
+    3. Select结果也可以导入到本地目录
+  
+    
+
+    
+6. 
 
 
 
     
-INSERT OVERWRITE LOCAL DIRECTORY '/tmp/reg_3' select count(*) as s, stock, action from optional_user_day GROUP by stock, action sort by s;
-    
-T [ALL | DISTINCT] select_expr, select_expr, ...FROM table_reference[WHERE where_condition][GROUP BY col_list][CLUSTER BY col_list  | [DISTRIBUTE BY col_list] [SORT BY col_list]][LIMIT number] 
-    
-    
     
 
 
-LOAD DATA LOCAL INPATH '/home/hadoop/login.txt' OVERWRITE INTO TABLE login PARTITION (dt='20130101'); 
+
+
+
+
+
+
+
+
+

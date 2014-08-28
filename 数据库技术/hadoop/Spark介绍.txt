@@ -15,24 +15,42 @@
   Spark中的应用被称为Drivers，这些Drivers实现了各种操作。
   Driver对数据的处理可分为Transformation和Action两大类:
   3.1 Transformation - 负责转换生成新RDD
-    map               同hadoop的map
-    filter            过滤elements(exp==true通过)
-    sample            取样
-    groupByKey        
-    reduceByKey 
-    sortByKey
-    flatMap 
-    union             两个rdd求并集(可重复) m + n
-    join              如("a", 1) join ("a", 2) -> ("a", (1, 2))
-    cogroup           类似full join，返回的维度一致。[('a', ([1], [2])), ('b', ([4], []))] (y中没有"b")
-    mapValues 
-    
+    map(func):
+      <R> JavaRDD<R> map(Function<T,R> f)                   // R f(T)
+      将一个T, 转化为一个R
+    flatMap(func):
+      <U> JavaRDD<U> flatMap(FlatMapFunction<T,U> f)        // Iterable<U> f(T)
+      将一个T, 扁平化为0+个U
+    filter(func):
+      JavaRDD<T> filter(Function<T,Boolean> f)              // Boolean f(T)
+      把T传进f()， 获取一个Boolean值，确实是否被过滤
+    repartition(numPartitions):
+      重新分区
+    union(otherStream):
+      JavaRDD<T> union(JavaRDD<T> other)
+      简单的合并，不涉及到数据的转换 
+    count():
+      long count()
+      简单的计数
+    reduce(func):
+      T reduce(Function2<T,T,T> f)                          // T f(T, T)
+      把两个T合为一个T
+    reduceByKey(func, [numTasks]):
+      JavaPairRDD<K,V> reduceByKey(Function2<V,V,V> func, int numPartitions)              // V f(V, V)
+      相同的V会两两合并，最终形成一个V
+    countByValue():
+      java.util.Map<T,Long> countByValue()
+      对value进行count，最终得到<value, count>
+    join(otherStream, [numTasks]):
+      <W> JavaPairRDD<K,scala.Tuple2<V,W>> join(JavaPairRDD<K,W> other)
+      将(K, V)和(K, W)，转化为(K, (V, W))
   3.2 actions - 对数据集执行计算并把结果返回给Driver
     collect           以list的形式，返回所有的rdd
     reduce            同hadoop的reduce
     count             仅返回list.size()
     save              保存到hdfs
     lookupKey
+
     
 4. 容错性
   RDDs会维护血统信息，因为数据丢失后，往往要从input开始，一级一级的恢复。
@@ -54,6 +72,30 @@
  
 
 
+1. Spark Streaming
+  虽说是Streaming，但其实也还是batches，只不过batches比较小，可以1秒钟一个batch。
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 
 
 
