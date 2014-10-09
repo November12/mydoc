@@ -69,12 +69,44 @@
 
 3. 
   Workflow Jobs
+    A Workflow application is DAG that coordinates the following types of actions: Hadoop, Pig, and sub-workflows.
+    
+
+  
+    Action:   An execution/computation task (Map-Reduce job, Pig job, a shell command). It can also be referred as task or 'action node'.
+    Workflow: A collection of actions arranged in a control dependency DAG (Direct Acyclic Graph). "control dependency" from one action to another means that the second action can't run until the first action has completed.
+    Workflow Definition: A programmatic description of a workflow that can be executed.
+    Workflow Definition Language: The language used to define a Workflow Definition.
+    Workflow Job: An executable instance of a workflow definition.
+    Workflow Engine: A system that executes workflows jobs. It can also be referred as a DAG engine.
+
+  
+  
+  
+  
+  
+  
+  
+  
     一个完整的DAG的处理，从开始到结束。
     
   Coordinator Jobs
     条件满足时，触发action
+    Oozie Coordinator系统允许用户定义和执行周期性的和相互依赖的workflow jobs。
+    Actual time： 某件事情真实发生的时间
+    Nominal time：某件事情应该发生的时间。理论上来讲，Nominal time和Actual time应该匹配，但由于延迟，Actual time会晚于nominal time。
+    Dataset：     数据集。一个dataset有多个数据实例，每个都是独一无二的。每个dataset代表了唯一的URLs集合。
+    Synchronous Dataset：同步数据集在固定时间间隔生成，在每个时间间隔都有一个与之相关的数据集实例。同步数据集被它们的nominal time标识。例如一个基于数据集的文件系统，nominal time应该在数据集实例的文件路径某处。hdfs://foo:9000/usr/logs/2009/04/15/23/30 
+    Coordinator Action：代表一个workflow job，当一组条件满足后该job就开始了。
+    Coordinator Application：定义了条件，在该条件下，coordinator actions被触发以及这些action什么时候开始。Coordinator application定义开始时间和结束时间。Coordinator application可以被参数化。
+    Coordinator Job：它是coordination definition的可执行实例。
+    Data pipeline：数据管道。
+    Coordinator Definition Language
+    Coordinator Engine
   
   Bundle Jobs
+    组装一组coordinator app。用户能够开始、停止、挂起、恢复、重新运行。
     
-  
+  oozie job -oozie http://localhost:11000/oozie -config job.properties -run
+
   

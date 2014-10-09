@@ -1,0 +1,7 @@
+1、 解压apache-flume-1.5.0.1-bin.tar.gz
+   
+    替换之前的1.4版本
+
+2、 把./lib中所有jar导入./apache-flume-1.5.0.1-bin/lib/目录下
+
+
